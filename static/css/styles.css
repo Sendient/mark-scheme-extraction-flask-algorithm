@@ -1,0 +1,1664 @@
+/* Global Styles */
+body {
+    font-family: 'Bubblegum Sans', cursive;
+    background-color: #87CEEB; /* Sky blue */
+    color: #333;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+    position: relative;
+    min-height: 100vh;
+    cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="%23f0e68c" stroke="%23d4af37" stroke-width="2"/></svg>') 12 12, auto;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: 'Fredoka One', cursive;
+}
+
+/* British Countryside Theme Elements */
+.countryside-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -100;
+    pointer-events: none;
+    overflow: hidden;
+}
+
+.sky {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 70%;
+    background: linear-gradient(to bottom, #6EB9E5, #87CEEB);
+    z-index: -10;
+    transition: background 2s ease-in-out;
+}
+
+.sun {
+    position: fixed;
+    top: 40px;
+    right: 80px;
+    width: 100px;
+    height: 100px;
+    background: radial-gradient(circle, #FFD700 30%, rgba(255, 215, 0, 0) 70%);
+    border-radius: 50%;
+    box-shadow: 0 0 50px 10px rgba(255, 215, 0, 0.7);
+    z-index: -9;
+    animation: sun-pulse 8s infinite alternate;
+    cursor: pointer;
+    transition: opacity 2s ease, box-shadow 2s ease;
+    pointer-events: auto; /* FIX: Allow sun to receive click events */
+}
+
+.sun-rays {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    animation: sun-rays-rotate 20s linear infinite;
+}
+
+.sun-ray {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 120%;
+    height: 4px;
+    background: rgba(255, 215, 0, 0.4);
+    transform-origin: 0 0;
+}
+
+@keyframes sun-pulse {
+    0% { transform: scale(1); opacity: 0.8; }
+    50% { transform: scale(1.1); opacity: 1; }
+    100% { transform: scale(1); opacity: 0.8; }
+}
+
+@keyframes sun-rays-rotate {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.clouds {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: -8;
+    transition: opacity 2s ease;
+}
+
+.cloud {
+    position: absolute;
+    background: white;
+    border-radius: 50px;
+    opacity: 0.9;
+    animation: float linear infinite;
+    transition: background 2s ease, opacity 2s ease, animation-duration 2s ease;
+}
+
+.cloud:before, .cloud:after {
+    content: '';
+    position: absolute;
+    background: white;
+    border-radius: 50%;
+    transition: background 2s ease;
+}
+
+.cloud1 {
+    width: 120px;
+    height: 60px;
+    top: 80px;
+    left: 10%;
+    animation-duration: 80s;
+}
+
+.cloud1:before {
+    width: 60px;
+    height: 60px;
+    top: -30px;
+    left: 10px;
+}
+
+.cloud1:after {
+    width: 80px;
+    height: 80px;
+    top: -40px;
+    right: 15px;
+}
+
+.cloud2 {
+    width: 150px;
+    height: 70px;
+    top: 60px;
+    left: 40%;
+    animation-duration: 95s;
+    animation-delay: -15s;
+}
+
+.cloud2:before {
+    width: 70px;
+    height: 70px;
+    top: -35px;
+    left: 15px;
+}
+
+.cloud2:after {
+    width: 100px;
+    height: 100px;
+    top: -50px;
+    right: 20px;
+}
+
+.cloud3 {
+    width: 180px;
+    height: 80px;
+    top: 120px;
+    left: 70%;
+    animation-duration: 105s;
+    animation-delay: -30s;
+}
+
+.cloud3:before {
+    width: 80px;
+    height: 80px;
+    top: -40px;
+    left: 20px;
+}
+
+.cloud3:after {
+    width: 120px;
+    height: 120px;
+    top: -60px;
+    right: 25px;
+}
+
+@keyframes float {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(100vw); }
+}
+
+.hills {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 40%;
+    z-index: -5;
+}
+
+.hill {
+    position: absolute;
+    border-radius: 50%;
+    transition: background 2s ease;
+}
+
+.hill1 {
+    width: 600px;
+    height: 300px;
+    bottom: -100px;
+    left: -100px;
+    background: linear-gradient(to bottom, #7CB342, #558B2F);
+}
+
+.hill2 {
+    width: 800px;
+    height: 400px;
+    bottom: -200px;
+    left: 200px;
+    background: linear-gradient(to bottom, #8BC34A, #689F38);
+    z-index: -6;
+}
+
+.hill3 {
+    width: 700px;
+    height: 350px;
+    bottom: -150px;
+    right: -100px;
+    background: linear-gradient(to bottom, #AED581, #7CB342);
+    z-index: -7;
+}
+
+/* FIX: Improved stone wall visibility */
+.stone-wall {
+    position: absolute;
+    bottom: 40px;
+    left: 0;
+    width: 100%;
+    height: 25px;
+    background-color: #a0a0a0; /* Fallback color */
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="25" viewBox="0 0 100 25"><rect x="0" y="0" width="20" height="12" fill="%23a0a0a0" /><rect x="22" y="0" width="15" height="12" fill="%23909090" /><rect x="39" y="0" width="22" height="12" fill="%23b0b0b0" /><rect x="63" y="0" width="18" height="12" fill="%23a0a0a0" /><rect x="83" y="0" width="17" height="12" fill="%23808080" /><rect x="5" y="13" width="25" height="12" fill="%23b0b0b0" /><rect x="32" y="13" width="20" height="12" fill="%23909090" /><rect x="54" y="13" width="23" height="12" fill="%23a0a0a0" /><rect x="79" y="13" width="16" height="12" fill="%23b0b0b0" /></svg>');
+    background-repeat: repeat-x;
+    z-index: -2; /* FIX: Changed z-index to be higher than field */
+}
+
+.field {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 65px;
+    background-color: #8BC34A;
+    z-index: -3;
+    transition: background-color 2s ease;
+}
+
+.field:after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="10" viewBox="0 0 100 10"><path d="M0,10 L2,5 L5,8 L8,2 L10,10" fill="none" stroke="%2381AF34" stroke-width="1" /><path d="M20,10 L22,3 L25,7 L28,5 L30,10" fill="none" stroke="%2381AF34" stroke-width="1" /><path d="M40,10 L42,4 L45,6 L48,2 L50,10" fill="none" stroke="%2381AF34" stroke-width="1" /><path d="M60,10 L62,6 L65,8 L68,4 L70,10" fill="none" stroke="%2381AF34" stroke-width="1" /><path d="M80,10 L82,3 L85,7 L88,5 L90,10" fill="none" stroke="%2381AF34" stroke-width="1" /></svg>');
+    background-repeat: repeat;
+    opacity: 0.7;
+    transition: background-image 2s ease;
+}
+
+.cottage {
+    position: absolute;
+    bottom: 65px;
+    right: 100px;
+    width: 100px;
+    height: 80px;
+    z-index: -2;
+    transform: scale(0.8);
+}
+
+.cottage-body {
+    position: absolute;
+    bottom: 0;
+    width: 100px;
+    height: 60px;
+    background-color: #EFEBE9;
+    border: 2px solid #8D6E63;
+}
+
+.cottage-roof {
+    position: absolute;
+    bottom: 60px;
+    left: -10px;
+    width: 120px;
+    height: 40px;
+    background-color: #8D6E63;
+    clip-path: polygon(0 100%, 50% 0, 100% 100%);
+}
+
+.cottage-door {
+    position: absolute;
+    bottom: 0;
+    left: 35px;
+    width: 20px;
+    height: 30px;
+    background-color: #6D4C41;
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+}
+
+.cottage-window {
+    position: absolute;
+    width: 15px;
+    height: 15px;
+    background-color: #BBDEFB;
+    border: 2px solid #6D4C41;
+}
+
+.cottage-window1 {
+    bottom: 35px;
+    left: 15px;
+}
+
+.cottage-window2 {
+    bottom: 35px;
+    right: 15px;
+}
+
+.cottage-chimney {
+    position: absolute;
+    bottom: 85px;
+    right: 20px;
+    width: 12px;
+    height: 25px;
+    background-color: #8D6E63;
+}
+
+.chimney-smoke {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    background-color: rgba(255, 255, 255, 0.8);
+    border-radius: 50%;
+    z-index: -1;
+    transition: width 0.3s ease, height 0.3s ease, opacity 0.3s ease;
+}
+
+/* Farmer characters */
+.farmer-container {
+    position: fixed;
+    bottom: 5px;
+    left: 0;
+    width: 100%;
+    height: 80px;
+    z-index: -1;
+    pointer-events: none;
+}
+
+.farmer {
+    position: absolute;
+    bottom: 40px;
+    width: 40px;
+    height: 80px;
+    transition: transform 0.5s ease;
+}
+
+.farmer-body {
+    position: absolute;
+    width: 20px;
+    height: 30px;
+    background-color: #2196F3;
+    bottom: 20px;
+    left: 10px;
+}
+
+.farmer-head {
+    position: absolute;
+    width: 15px;
+    height: 15px;
+    background-color: #FFE0B2;
+    border-radius: 50%;
+    bottom: 50px;
+    left: 13px;
+}
+
+.farmer-hat {
+    position: absolute;
+    width: 20px;
+    height: 8px;
+    background-color: #795548;
+    border-radius: 50% 50% 0 0;
+    bottom: 60px;
+    left: 10px;
+}
+
+.farmer-arm {
+    position: absolute;
+    width: 5px;
+    height: 15px;
+    background-color: #2196F3;
+}
+
+.farmer-arm1 {
+    bottom: 30px;
+    left: 5px;
+    transform-origin: bottom;
+    animation: farm-work 1s infinite alternate;
+}
+
+.farmer-arm2 {
+    bottom: 30px;
+    right: 5px;
+    transform-origin: bottom;
+    animation: farm-work 1s infinite alternate-reverse;
+}
+
+.farmer-leg {
+    position: absolute;
+    width: 5px;
+    height: 20px;
+    background-color: #795548;
+    bottom: 0;
+}
+
+.farmer-leg1 {
+    left: 12px;
+}
+
+.farmer-leg2 {
+    right: 12px;
+}
+
+.farmer-tool {
+    position: absolute;
+    bottom: 35px;
+    left: 0;
+    width: 25px;
+    height: 5px;
+    background-color: #795548;
+    transform-origin: right center;
+    transform: rotate(-30deg);
+    transition: all 0.5s ease;
+}
+
+/* Farmer animations and seasonal tools */
+.farmer.working .farmer-arm1 {
+    animation: farm-work 1s infinite alternate;
+}
+
+.farmer.working .farmer-arm2 {
+    animation: farm-work 1s infinite alternate-reverse;
+}
+
+.farmer.planting .farmer-tool {
+    width: 5px;
+    height: 15px;
+    left: 3px;
+    bottom: 25px;
+    transform: rotate(0);
+    background-color: #795548;
+}
+
+.farmer.harvesting .farmer-tool {
+    width: 25px;
+    height: 3px;
+    left: -15px;
+    bottom: 40px;
+    transform: rotate(-45deg);
+    background-color: #FF9800;
+}
+
+.farmer.tending .farmer-tool {
+    width: 20px;
+    height: 4px;
+    left: -10px;
+    bottom: 30px;
+    transform: rotate(-20deg);
+    background-color: #8D6E63;
+}
+
+@keyframes farm-work {
+    0% { transform: rotate(-20deg); }
+    100% { transform: rotate(20deg); }
+}
+
+/* Animal container */
+.animal-container {
+    position: fixed;
+    bottom: 5px;
+    left: 0;
+    width: 100%;
+    height: 60px;
+    z-index: -1;
+    pointer-events: none;
+}
+
+.sheep {
+    position: absolute;
+    bottom: 0;
+    width: 50px;
+    height: 40px;
+    transition: transform 0.5s ease;
+}
+
+.sheep-body {
+    position: absolute;
+    width: 40px;
+    height: 25px;
+    background-color: white;
+    border-radius: 20px;
+    bottom: 10px;
+    left: 5px;
+    box-shadow: 0 3px 5px rgba(0, 0, 0, 0.1);
+}
+
+.sheep-head {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    background-color: #FFE0B2;
+    border-radius: 50%;
+    bottom: 15px;
+    left: 0;
+}
+
+.sheep-ear {
+    position: absolute;
+    width: 10px;
+    height: 8px;
+    background-color: #FFE0B2;
+    border-radius: 50%;
+}
+
+.sheep-ear1 {
+    transform: rotate(-30deg);
+    top: -3px;
+    left: 2px;
+}
+
+.sheep-ear2 {
+    transform: rotate(30deg);
+    top: -3px;
+    right: 2px;
+}
+
+.sheep-eye {
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    background-color: black;
+    border-radius: 50%;
+    top: 8px;
+    left: 5px;
+}
+
+.sheep-leg {
+    position: absolute;
+    width: 5px;
+    height: 10px;
+    background-color: #E0E0E0;
+    bottom: 0;
+    transition: transform 0.2s ease;
+}
+
+.sheep-leg1 {
+    left: 10px;
+}
+
+.sheep-leg2 {
+    left: 20px;
+}
+
+.sheep-leg3 {
+    right: 20px;
+}
+
+.sheep-leg4 {
+    right: 10px;
+}
+
+/* Walking animation for sheep */
+.sheep.walking .sheep-leg1 {
+    animation: walk-leg 0.5s infinite;
+}
+
+.sheep.walking .sheep-leg2 {
+    animation: walk-leg 0.5s infinite 0.25s;
+}
+
+.sheep.walking .sheep-leg3 {
+    animation: walk-leg 0.5s infinite 0.1s;
+}
+
+.sheep.walking .sheep-leg4 {
+    animation: walk-leg 0.5s infinite 0.35s;
+}
+
+@keyframes walk-leg {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-3px); }
+}
+
+.cow {
+    position: absolute;
+    bottom: 0;
+    width: 70px;
+    height: 50px;
+    transition: transform 0.5s ease;
+}
+
+.cow-body {
+    position: absolute;
+    width: 60px;
+    height: 35px;
+    background-color: #F5F5F5;
+    border-radius: 30px;
+    bottom: 10px;
+    left: 5px;
+    box-shadow: 0 3px 5px rgba(0, 0, 0, 0.1);
+}
+
+.cow-spot {
+    position: absolute;
+    background-color: #795548;
+    border-radius: 50%;
+}
+
+.cow-spot1 {
+    width: 20px;
+    height: 15px;
+    top: 5px;
+    left: 10px;
+}
+
+.cow-spot2 {
+    width: 15px;
+    height: 10px;
+    bottom: 5px;
+    right: 15px;
+}
+
+.cow-head {
+    position: absolute;
+    width: 25px;
+    height: 25px;
+    background-color: #F5F5F5;
+    border-radius: 50%;
+    bottom: 20px;
+    left: 0;
+    transition: transform 0.3s ease;
+}
+
+.cow-ear {
+    position: absolute;
+    width: 10px;
+    height: 8px;
+    background-color: #F5F5F5;
+    border-radius: 50%;
+}
+
+.cow-ear1 {
+    transform: rotate(-30deg);
+    top: -3px;
+    left: 2px;
+}
+
+.cow-ear2 {
+    transform: rotate(30deg);
+    top: -3px;
+    right: 2px;
+}
+
+.cow-eye {
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    background-color: black;
+    border-radius: 50%;
+    top: 10px;
+    left: 7px;
+}
+
+.cow-nose {
+    position: absolute;
+    width: 15px;
+    height: 10px;
+    background-color: #FFCCBC;
+    border-radius: 10px;
+    bottom: 0;
+    left: 5px;
+}
+
+.cow-leg {
+    position: absolute;
+    width: 5px;
+    height: 10px;
+    background-color: #E0E0E0;
+    bottom: 0;
+}
+
+.cow-leg1 {
+    left: 15px;
+}
+
+.cow-leg2 {
+    left: 30px;
+}
+
+.cow-leg3 {
+    right: 30px;
+}
+
+.cow-leg4 {
+    right: 15px;
+}
+
+.butterfly {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    z-index: -1;
+    animation: butterfly-float 15s linear infinite;
+    transition: display 0.5s ease;
+}
+
+.butterfly-wing {
+    position: absolute;
+    width: 10px;
+    height: 15px;
+    background-color: #FF7043;
+    border-radius: 50% 50% 0 50%;
+    animation: butterfly-flap 0.2s alternate infinite ease-in-out;
+}
+
+.butterfly-wing-left {
+    left: 0;
+    transform: rotate(-30deg);
+    transform-origin: right center;
+}
+
+.butterfly-wing-right {
+    right: 0;
+    transform: rotate(30deg) scaleX(-1);
+    transform-origin: left center;
+}
+
+.butterfly-body {
+    position: absolute;
+    width: 2px;
+    height: 15px;
+    background-color: #3E2723;
+    left: 50%;
+    top: 2px;
+    transform: translateX(-50%);
+}
+
+@keyframes butterfly-flap {
+    0% { transform: rotate(-30deg); }
+    100% { transform: rotate(-5deg); }
+}
+
+@keyframes butterfly-float {
+    0% {
+        transform: translate(0, 0) rotate(0deg);
+    }
+    25% {
+        transform: translate(100px, -50px) rotate(10deg);
+    }
+    50% {
+        transform: translate(200px, 0) rotate(0deg);
+    }
+    75% {
+        transform: translate(100px, 50px) rotate(-10deg);
+    }
+    100% {
+        transform: translate(0, 0) rotate(0deg);
+    }
+}
+
+.hedgehog {
+    position: absolute;
+    bottom: 5px;
+    left: 150px;
+    width: 30px;
+    height: 20px;
+    transition: transform 1s ease, left 1s ease;
+    z-index: -1;
+}
+
+.hedgehog-body {
+    position: absolute;
+    width: 30px;
+    height: 20px;
+    background-color: #8D6E63;
+    border-radius: 50% 40% 40% 50%;
+    bottom: 0;
+}
+
+.hedgehog-face {
+    position: absolute;
+    width: 12px;
+    height: 10px;
+    background-color: #A1887F;
+    border-radius: 50% 40% 40% 50%;
+    bottom: 0;
+    left: -2px;
+}
+
+.hedgehog-eye {
+    position: absolute;
+    width: 3px;
+    height: 3px;
+    background-color: black;
+    border-radius: 50%;
+    bottom: 5px;
+    left: 2px;
+}
+
+.hedgehog-nose {
+    position: absolute;
+    width: 3px;
+    height: 2px;
+    background-color: #5D4037;
+    border-radius: 50%;
+    bottom: 2px;
+    left: 0;
+}
+
+.hedgehog-spikes {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+}
+
+.hedgehog-spike {
+    position: absolute;
+    width: 2px;
+    height: 6px;
+    background-color: #6D4C41;
+    border-radius: 50% 50% 0 0;
+    transform-origin: bottom center;
+}
+
+.raindrop {
+    position: absolute;
+    width: 2px;
+    height: 10px;
+    background: linear-gradient(to bottom, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.8));
+    border-radius: 50%;
+    animation: raindrop-fall 1.5s linear infinite;
+    opacity: 0;
+    z-index: -2;
+}
+
+@keyframes raindrop-fall {
+    0% {
+        transform: translateY(-100px);
+        opacity: 0;
+    }
+    5% {
+        opacity: 0.7;
+    }
+    95% {
+        opacity: 0.7;
+    }
+    100% {
+        transform: translateY(100vh);
+        opacity: 0;
+    }
+}
+
+.snowflake {
+    position: absolute;
+    width: 5px;
+    height: 5px;
+    background-color: white;
+    border-radius: 50%;
+    opacity: 0.8;
+    z-index: -2;
+}
+
+/* FIX: Improved rainbow positioning and visibility */
+.rainbow {
+    position: fixed;
+    top: 60px;
+    left: -150px;
+    width: 500px;
+    height: 250px;
+    border-radius: 250px 250px 0 0;
+    overflow: hidden;
+    transform: scale(0.7);
+    opacity: 0;
+    transition: opacity 3s ease-in-out;
+    z-index: -8;
+    pointer-events: none;
+}
+
+.rainbow-active {
+    opacity: 0.7;
+}
+
+.rainbow-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 250px 250px 0 0;
+}
+
+.rainbow-layer1 { background-color: #FF0000; }
+.rainbow-layer2 { background-color: #FF7F00; top: 10px; left: 10px; right: 10px; width: auto; }
+.rainbow-layer3 { background-color: #FFFF00; top: 20px; left: 20px; right: 20px; width: auto; }
+.rainbow-layer4 { background-color: #00FF00; top: 30px; left: 30px; right: 30px; width: auto; }
+.rainbow-layer5 { background-color: #0000FF; top: 40px; left: 40px; right: 40px; width: auto; }
+.rainbow-layer6 { background-color: #4B0082; top: 50px; left: 50px; right: 50px; width: auto; }
+.rainbow-layer7 { background-color: #9400D3; top: 60px; left: 60px; right: 60px; width: auto; }
+.rainbow-layer8 { background-color: #87CEEB; top: 70px; left: 70px; right: 70px; width: auto; }
+
+/* Seasonal adjustments */
+.season-summer .sheep-body {
+    background-color: white;
+}
+
+.season-summer .butterfly-wing {
+    background-color: #FF7043;
+}
+
+.season-summer .field:after {
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="10" viewBox="0 0 100 10"><path d="M0,10 L2,5 L5,8 L8,2 L10,10" fill="none" stroke="%2381AF34" stroke-width="1" /><path d="M20,10 L22,3 L25,7 L28,5 L30,10" fill="none" stroke="%2381AF34" stroke-width="1" /><path d="M40,10 L42,4 L45,6 L48,2 L50,10" fill="none" stroke="%2381AF34" stroke-width="1" /><path d="M60,10 L62,6 L65,8 L68,4 L70,10" fill="none" stroke="%2381AF34" stroke-width="1" /><path d="M80,10 L82,3 L85,7 L88,5 L90,10" fill="none" stroke="%2381AF34" stroke-width="1" /></svg>');
+}
+
+.season-autumn .sheep-body {
+    background-color: #F5F5F5;
+}
+
+.season-autumn .butterfly-wing {
+    background-color: #FF5722;
+}
+
+.season-autumn .field:after {
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="10" viewBox="0 0 100 10"><path d="M0,10 L2,5 L5,8 L8,2 L10,10" fill="none" stroke="%23D4A76A" stroke-width="1" /><path d="M20,10 L22,3 L25,7 L28,5 L30,10" fill="none" stroke="%23D4A76A" stroke-width="1" /><path d="M40,10 L42,4 L45,6 L48,2 L50,10" fill="none" stroke="%23D4A76A" stroke-width="1" /><path d="M60,10 L62,6 L65,8 L68,4 L70,10" fill="none" stroke="%23D4A76A" stroke-width="1" /><path d="M80,10 L82,3 L85,7 L88,5 L90,10" fill="none" stroke="%23D4A76A" stroke-width="1" /></svg>');
+}
+
+.season-winter .sheep-body {
+    background-color: #ECEFF1;
+}
+
+.season-winter .field:after {
+    background-image: none;
+}
+
+.season-spring .sheep-body {
+    background-color: #FAFAFA;
+}
+
+.season-spring .butterfly-wing {
+    background-color: #AB47BC;
+}
+
+.season-spring .field:after {
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="10" viewBox="0 0 100 10"><path d="M0,10 L2,5 L5,8 L8,2 L10,10" fill="none" stroke="%23C5E1A5" stroke-width="1" /><path d="M20,10 L22,3 L25,7 L28,5 L30,10" fill="none" stroke="%23C5E1A5" stroke-width="1" /><path d="M40,10 L42,4 L45,6 L48,2 L50,10" fill="none" stroke="%23C5E1A5" stroke-width="1" /><path d="M60,10 L62,6 L65,8 L68,4 L70,10" fill="none" stroke="%23C5E1A5" stroke-width="1" /><path d="M80,10 L82,3 L85,7 L88,5 L90,10" fill="none" stroke="%23C5E1A5" stroke-width="1" /></svg>');
+}
+
+/* Input Toggle */
+.input-toggle {
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.btn-group .btn-outline-primary {
+    border-color: #3498db;
+    color: #3498db;
+    font-size: 1.1rem;
+    padding: 10px 20px;
+}
+
+.btn-group .btn-check:checked + .btn-outline-primary {
+    background-color: #3498db;
+    color: white;
+}
+
+/* Text Input Area */
+#markSchemeText {
+    min-height: 200px;
+    border-radius: 10px;
+    border: 2px solid #e0e0e0;
+    font-family: monospace;
+    padding: 15px;
+    transition: border 0.3s;
+}
+
+#markSchemeText:focus {
+    border-color: #3498db;
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+}
+
+/* Card Styling */
+.summer-card {
+    background-color: rgba(255, 255, 255, 0.9);
+    border-radius: 20px;
+    border: none;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    transition: transform 0.3s, box-shadow 0.3s;
+    margin-bottom: 30px;
+}
+
+.summer-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+}
+
+.card-header {
+    background-color: #48AAAD;
+    border-bottom: none;
+    padding: 15px 20px;
+}
+
+.card-header h2 {
+    margin: 0;
+    color: white;
+    font-size: 1.8rem;
+}
+
+/* Basic Info Section */
+.basic-info-section {
+    background-color: #f9f9f9;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 25px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.form-label {
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+/* Upload Area */
+.upload-dropzone {
+    border: 3px dashed #3498db;
+    border-radius: 15px;
+    padding: 40px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s;
+    background-color: rgba(52, 152, 219, 0.1);
+}
+
+.upload-dropzone:hover, .upload-dropzone.dragover {
+    background-color: rgba(52, 152, 219, 0.2);
+    border-color: #2980b9;
+    transform: scale(1.01);
+}
+
+.upload-dropzone i {
+    color: #3498db;
+    margin-bottom: 15px;
+}
+
+.upload-dropzone p {
+    color: #666;
+    font-size: 1.2rem;
+    margin-bottom: 0;
+}
+
+/* Button Styling */
+.btn {
+    border-radius: 50px;
+    padding: 10px 25px;
+    font-weight: bold;
+    font-family: 'Bubblegum Sans', cursive;
+    font-size: 1.1rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border: none;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s;
+}
+
+.btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+.btn:active {
+    transform: translateY(1px);
+}
+
+.btn-primary {
+    background-color: #3498db;
+    color: white;
+}
+
+.btn-success {
+    background-color: #2ecc71;
+    color: white;
+}
+
+.btn-info {
+    background-color: #00b8d4;
+    color: white;
+}
+
+.btn-danger {
+    background-color: #e74c3c;
+    color: white;
+}
+
+.btn-sm {
+    padding: 5px 15px;
+    font-size: 0.8rem;
+}
+
+/* Sortable List */
+.sortable-list {
+    list-style: none;
+    padding: 0;
+}
+
+.sortable-item {
+    background-color: white;
+    border-radius: 10px;
+    padding: 10px 15px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    cursor: grab;
+    transition: background-color 0.3s;
+}
+
+.sortable-item:hover {
+    background-color: #f9f9f9;
+}
+
+.sortable-item img {
+    width: 80px;
+    height: 50px;
+    object-fit: cover;
+    border-radius: 5px;
+    margin-right: 15px;
+}
+
+.sortable-item .handle {
+    margin-right: 15px;
+    color: #bbb;
+    cursor: grab;
+}
+
+.sortable-item .filename {
+    flex-grow: 1;
+}
+
+.sortable-item .remove-btn {
+    background: none;
+    border: none;
+    color: #E57373;
+    cursor: pointer;
+    font-size: 1.2rem;
+    transition: color 0.3s;
+}
+
+.sortable-item .remove-btn:hover {
+    color: #F44336;
+}
+
+/* Preview Image */
+.stitched-preview-wrapper {
+    max-height: 500px;
+    overflow-y: auto;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+/* Mark Scheme Styling - Improved */
+.mark-scheme-objective {
+    background-color: white;
+    border-radius: 10px;
+    padding: 15px;
+    margin-bottom: 25px;
+    box-shadow: 0 3px 15px rgba(0, 0, 0, 0.05);
+    border-left: 5px solid #3498db;
+}
+
+.objective-header {
+    background-color: #f8f9fa;
+    color: #2c3e50;
+    padding: 12px 15px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    font-size: 1.3rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.objective-title-area {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.objective-name {
+    font-weight: bold;
+    color: #2980b9;
+}
+
+.objective-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.objective-weight {
+    font-size: 0.9rem;
+    background-color: #e1f5fe;
+    padding: 3px 10px;
+    border-radius: 20px;
+    color: #0288d1;
+}
+
+.assessment-objective-id {
+    font-size: 0.8rem;
+    color: #7f8c8d;
+    background-color: #f1f2f6;
+    padding: 2px 8px;
+    border-radius: 4px;
+}
+
+.mark-scheme-level {
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 15px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.03);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.mark-scheme-level:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.06);
+}
+
+.level-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.level-info {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.level-title {
+    font-weight: bold;
+    font-size: 1.1rem;
+    color: #2c3e50;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.level-marks {
+    background-color: #e8f5e9;
+    color: #388e3c;
+    padding: 4px 12px;
+    border-radius: 50px;
+    font-weight: bold;
+    font-size: 0.9rem;
+}
+
+.skills-section, .indicative-standard, .guidance-section, .indicative-content-section, .global-guidance-section, .global-indicative-content-section {
+    background-color: white;
+    border-radius: 8px;
+    padding: 15px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+    margin-bottom: 15px;
+}
+
+.section-header {
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #f1f2f6;
+}
+
+.skills-title, .indicative-title, .guidance-title, .indicative-content-title {
+    color: #3498db;
+    font-weight: bold;
+    margin-bottom: 8px;
+}
+
+.skills-list {
+    list-style: none;
+    padding-left: 0;
+}
+
+.skill-item {
+    position: relative;
+    padding: 8px 10px;
+    margin-bottom: 8px;
+    background-color: #f8f9fa;
+    border-radius: 6px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.skill-item:hover {
+    background-color: #f1f2f6;
+}
+
+.skill-content {
+    flex: 1;
+    padding-left: 25px;
+    position: relative;
+}
+
+.skill-content:before {
+    content: "•";
+    position: absolute;
+    left: 10px;
+    color: #2ecc71;
+    font-size: 1.2rem;
+}
+
+.skill-controls {
+    margin-left: 10px;
+}
+
+.delete-skill-btn {
+    padding: 2px 8px;
+    border-radius: 50%;
+    box-shadow: none;
+}
+
+.delete-skill-btn:hover {
+    transform: none;
+    box-shadow: none;
+}
+
+.indicative-content, .indicative-content-text, .guidance-content {
+    background-color: #f8f9fa;
+    border-radius: 5px;
+    border: 1px solid #e9ecef;
+    min-height: 60px;
+    padding: 10px;
+    white-space: pre-line;
+}
+
+/* Validation Messages */
+#validationMessages {
+    border-radius: 10px;
+    padding: 15px 20px;
+    margin: 20px 0;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+}
+
+#validationErrorsList {
+    margin-bottom: 0;
+    padding-left: 20px;
+}
+
+#validationErrorsList li {
+    margin-bottom: 5px;
+}
+
+/* Searchable Dropdown Styling */
+.subject-dropdown {
+    position: relative;
+}
+
+.subject-dropdown .dropdown-menu {
+    max-height: 300px;
+    overflow-y: auto;
+    border-radius: 10px;
+    padding: 10px 0;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.subject-dropdown .dropdown-item {
+    padding: 8px 15px;
+    transition: background-color 0.2s;
+}
+
+.subject-dropdown .dropdown-item:hover {
+    background-color: #e3f2fd;
+}
+
+.subject-dropdown .dropdown-item.active,
+.subject-dropdown .dropdown-item:active {
+    background-color: #3498db;
+    color: white;
+}
+
+.subject-dropdown .form-control {
+    padding-right: 30px;
+}
+
+.subject-dropdown .form-control.dropdown-toggle::after {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+/* Editable Fields */
+.editable-field {
+    border: 1px solid transparent;
+    padding: 5px 10px;
+    border-radius: 5px;
+    transition: all 0.3s;
+    cursor: text;
+    background-color: rgba(255, 255, 255, 0.4);
+}
+
+.editable-field:hover {
+    border-color: #ddd;
+    background-color: rgba(255, 255, 255, 0.8);
+}
+
+.editable-field:focus {
+    outline: none;
+    border-color: #3498db;
+    background-color: white;
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+}
+
+/* Loading Overlay */
+#loadingOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.7);
+    z-index: 9999;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.spinner-container {
+    text-align: center;
+    color: white;
+}
+
+.spinner {
+    width: 60px;
+    height: 60px;
+    margin: 0 auto 20px;
+    border: 6px solid #3498db;
+    border-radius: 50%;
+    border-top-color: #2ecc71;
+    animation: spin 1s infinite linear;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+#loadingText {
+    font-size: 1.5rem;
+    letter-spacing: 1px;
+}
+
+/* Success Message */
+#successMessage {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 9999;
+    padding: 30px;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    max-width: 500px;
+    width: 90%;
+}
+
+#successMessage i {
+    color: #2ecc71;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    .card-header h2 {
+        font-size: 1.4rem;
+    }
+    
+    .upload-dropzone {
+        padding: 20px;
+    }
+    
+    .sun {
+        width: 80px;
+        height: 80px;
+        right: 40px;
+        top: 30px;
+    }
+    
+    .cottage {
+        transform: scale(0.6);
+        right: 30px;
+    }
+    
+    .btn {
+        padding: 8px 16px;
+        font-size: 0.9rem;
+    }
+    
+    .subject-dropdown .dropdown-menu {
+        max-height: 200px;
+    }
+    
+    .objective-header {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .objective-title-area, .objective-controls {
+        width: 100%;
+        justify-content: space-between;
+    }
+    
+    .level-info {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+    }
+}
+
+/* Paste hint styling */
+.paste-hint {
+    color: #6c757d;
+    font-size: 0.85rem;
+    margin-top: 5px;
+}
+
+.paste-hint i {
+    color: #3498db;
+}
+
+/* Paste notification */
+.paste-notification {
+    position: fixed;
+    bottom: -100px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #2ecc71;
+    color: white;
+    padding: 15px 25px;
+    border-radius: 50px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    z-index: 9999;
+    transition: bottom 0.3s ease-in-out;
+    display: flex;
+    align-items: center;
+}
+
+.paste-notification.show {
+    bottom: 30px;
+}
+
+.notification-content {
+    display: flex;
+    align-items: center;
+    font-weight: bold;
+}
+
+.notification-content i {
+    font-size: 1.2rem;
+    margin-right: 8px;
+}
+
+/* Add paste indicator to dropzone */
+.upload-dropzone {
+    position: relative;
+}
+
+.upload-dropzone:after {
+    content: 'Ctrl+V';
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    background-color: #3498db;
+    color: white;
+    font-size: 0.8rem;
+    padding: 3px 10px;
+    border-radius: 20px;
+    opacity: 0.7;
+}
+
+/* Styles for clickable images */
+.clickable-image {
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+}
+
+.clickable-image:hover {
+    transform: scale(1.05);
+    border-color: #3498db;
+    box-shadow: 0 0 10px rgba(52, 152, 219, 0.5);
+}
+
+.card-img-top.clickable-image {
+    height: 120px;
+    object-fit: cover;
+}
+
+/* Enhanced preview modal styles */
+#imagePreviewModal .modal-content {
+    background-color: rgba(255, 255, 255, 0.95);
+    border: none;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+#imagePreviewModal .modal-header {
+    border-bottom: none;
+    background-color: #48AAAD;
+    color: white;
+    border-radius: 15px 15px 0 0;
+}
+
+#imagePreviewModal .modal-footer {
+    border-top: none;
+    padding-top: 0;
+}
+
+#enlargedImage {
+    max-height: 70vh;
+    border-radius: 5px;
+}
+
+/* Add a small zoom-in icon to indicate clickable images */
+.clickable-image {
+    position: relative;
+}
+
+.clickable-image::after {
+    content: "\f00e";
+    font-family: "Font Awesome 5 Free";
+    font-weight: 900;
+    position: absolute;
+    bottom: 5px;
+    right: 5px;
+    background-color: rgba(52, 152, 219, 0.7);
+    color: white;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 12px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.clickable-image:hover::after {
+    opacity: 1;
+}
