@@ -1662,3 +1662,173 @@ h1, h2, h3, h4, h5, h6 {
 .clickable-image:hover::after {
     opacity: 1;
 }
+
+/* Balance button styling */
+.balance-marks-btn {
+    background-color: #5bc0de;
+    color: white;
+}
+
+.balance-marks-btn:hover {
+    background-color: #46b8da;
+}
+
+.balance-notification {
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    padding: 8px 15px;
+    border-radius: 20px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    font-size: 0.9rem;
+}
+
+/* Level reordering styles */
+.level-drag-handle {
+    cursor: grab;
+    padding: 0 10px;
+    color: #aaa;
+    display: flex;
+    align-items: center;
+}
+
+.level-drag-handle:hover {
+    color: #3498db;
+}
+
+.level-drag-handle i {
+    font-size: 1.2em;
+}
+
+.level-header {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.level-info {
+    flex-grow: 1;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.level-controls {
+    margin-left: auto;
+}
+
+/* Collapsing animation styles */
+.level-collapsing {
+    transition: all 0.3s ease-in-out;
+    overflow: hidden;
+}
+
+.level-collapsed {
+    max-height: 60px !important; /* Only show header */
+    overflow: hidden;
+}
+
+.level-collapsed .skills-section,
+.level-collapsed .indicative-standard {
+    opacity: 0;
+}
+
+/* Keep the level being dragged visible */
+.sortable-ghost {
+    opacity: 0.6;
+    background-color: #e3f2fd !important;
+    max-height: 60px !important;
+    border: 2px dashed #3498db;
+}
+
+.sortable-chosen {
+    background-color: #f8f9fa;
+    box-shadow: 0 0 15px rgba(52, 152, 219, 0.3);
+    z-index: 100;
+}
+
+.sortable-drag {
+    background-color: #fff;
+    box-shadow: 0 5px 20px rgba(52, 152, 219, 0.4);
+    max-height: 60px !important;
+    overflow: hidden;
+    border: 2px solid #3498db;
+}
+
+.levels-container {
+    margin-bottom: 10px;
+    transition: background-color 0.3s ease, padding 0.3s ease;
+}
+
+/* Enhanced indication when in reordering mode */
+.levels-container.sorting-active {
+    background-color: #f0f8ff;
+    border-radius: 8px;
+    padding: 10px;
+    border: 1px solid #d6e9ff;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.05) inset;
+}
+
+/* Make collapsed level headers more readable */
+.level-collapsed .level-header {
+    margin-bottom: 0;
+    border-bottom: none;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    padding: 8px;
+}
+
+/* Add number indicators for better visibility during sorting */
+.level-collapsed .level-title {
+    font-weight: bold;
+    color: #3498db;
+}
+
+.objective-weight {
+    font-size: 0.9rem;
+    background-color: #e1f5fe;
+    padding: 3px 10px;
+    border-radius: 20px;
+    color: #0288d1;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.objective-weight .editable-field {
+    min-width: 40px;
+    text-align: center;
+}
+
+
+/* Remove image button styling */
+.remove-image-btn {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background-color: rgba(231, 76, 60, 0.8);
+    color: white;
+    border: none;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    z-index: 10;
+    transition: all 0.2s ease;
+}
+
+.remove-image-btn:hover {
+    background-color: rgba(231, 76, 60, 1);
+    transform: scale(1.1);
+}
+
+.card {
+    position: relative;
+    overflow: visible;
+}

@@ -31,9 +31,9 @@ class AIExtractedMarkSchemeModel(BaseModel):
 
     mark_scheme: list[ObjectiveMarkSchemeModel]
     """The mark scheme for the question."""
-    guidance: str | None = Field(description="Extra information given in the image regarding the mark scheme and how to mark the answer.")
+    guidance: str | None = Field(description="Extra information given in the image regarding the mark scheme and how to *mark* the answer.")
     """Marking guidance"""
-    indicative_content: str | None = Field(description="Potential content which could appear in the answer")
+    indicative_content: str | None = Field(description="Potential content which could appear in an answer")
     """Potential content in the answer """
     title: str | None = Field(description="The title of the mark scheme.")
     """The title of the mark scheme"""

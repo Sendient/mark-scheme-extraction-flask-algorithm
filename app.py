@@ -389,6 +389,27 @@ def validate_mark_scheme(data):
     if not mark_scheme or not isinstance(mark_scheme, list) or len(mark_scheme) == 0:
         errors.append('At least one assessment objective is required')
     else:
+        # Check total weights if any weights are present
+        # Convert weights to float, treating empty strings and None as 0
+        weights = []
+        for obj in mark_scheme:
+            weight = obj.get('weight')
+            if weight is None or weight == '':
+                weights.append(0)
+            else:
+                try:
+                    weights.append(float(weight))
+                except (ValueError, TypeError):
+                    errors.append(f"Assessment objective {obj.get('objective', 'Unknown')}: Weight must be a number")
+                    weights.append(0)
+        
+        # Only check weight total if any weights are non-zero
+        if any(weights):
+            total_weight = sum(weights)
+            # Allow for floating point imprecision (e.g., 0.999999 or 1.000001)
+            if not (0.99 <= total_weight <= 1.01):
+                errors.append(f'Total weight must equal 1.0 (current total: {total_weight:.2f})')
+        
         # Check each objective
         for i, obj in enumerate(mark_scheme):
             obj_prefix = f"Assessment objective {i+1}"
@@ -403,26 +424,50 @@ def validate_mark_scheme(data):
             else:
                 # Check each level
                 for j, level in enumerate(levels):
-                    level_prefix = f"{obj_prefix}, Level {j+1}"
+                    level_prefix = f"{obj_prefix}, Level {level.get('level', j+1)}"
                     
                     if not level.get('level'):
                         errors.append(f"{level_prefix}: Level number is required")
                     
                     # Check mark bounds
-                    if level.get('upper_mark_bound') is None:
+                    upper_bound = level.get('upper_mark_bound')
+                    lower_bound = level.get('lower_mark_bound')
+                    
+                    if upper_bound is None:
                         errors.append(f"{level_prefix}: Upper mark bound is required")
-                    elif not isinstance(level.get('upper_mark_bound'), (int, float)):
+                    elif not isinstance(upper_bound, (int, float)):
                         errors.append(f"{level_prefix}: Upper mark bound must be a number")
                     
-                    if level.get('lower_mark_bound') is None:
+                    if lower_bound is None:
                         errors.append(f"{level_prefix}: Lower mark bound is required")
-                    elif not isinstance(level.get('lower_mark_bound'), (int, float)):
+                    elif not isinstance(lower_bound, (int, float)):
                         errors.append(f"{level_prefix}: Lower mark bound must be a number")
+                    
+                    # Check that lower_bound <= upper_bound
+                    if upper_bound is not None and lower_bound is not None and lower_bound > upper_bound:
+                        errors.append(f"{level_prefix}: Lower mark bound ({lower_bound}) cannot be greater than upper mark bound ({upper_bound})")
                     
                     # Check skills descriptors
                     skills = level.get('skills_descriptors', [])
                     if not skills or not isinstance(skills, list) or len(skills) == 0:
                         errors.append(f"{level_prefix}: At least one skills descriptor is required")
+                
+                # Check for overlapping mark ranges
+                if len(levels) > 1:
+                    # Sort levels by lower mark bound
+                    sorted_levels = sorted(levels, key=lambda x: x.get('lower_mark_bound', 0))
+                    
+                    # Check for overlaps
+                    for j in range(len(sorted_levels) - 1):
+                        current_level = sorted_levels[j]
+                        next_level = sorted_levels[j + 1]
+                        
+                        current_upper = current_level.get('upper_mark_bound')
+                        next_lower = next_level.get('lower_mark_bound')
+                        
+                        if current_upper is not None and next_lower is not None:
+                            if current_upper >= next_lower:
+                                errors.append(f"{obj_prefix}: Mark ranges for Level {current_level.get('level')} ({current_level.get('lower_mark_bound')}-{current_upper}) and Level {next_level.get('level')} ({next_lower}-{next_level.get('upper_mark_bound')}) overlap")
     
     return (len(errors) == 0, errors)
 
@@ -758,6 +803,7 @@ def submit_mark_scheme():
         import traceback
         traceback.print_exc()
         return jsonify({'error': f'Error submitting mark scheme: {str(e)}'}), 500
+
 
 # Modified run function to support async routes
 if __name__ == '__main__':

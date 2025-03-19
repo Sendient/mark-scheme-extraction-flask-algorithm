@@ -61,6 +61,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let farmers = []; // Store farmer references
     let mousePosition = { x: window.innerWidth / 2, y: window.innerHeight / 2 }; // Default mouse position
     let isModalOpen = false; // Track if a modal is open
+    // Store the Bootstrap modal instance
+    let imagePreviewModalInstance = null;
     
     // Enhanced British Countryside Theme Setup
     function setupCountrysideTheme() {
@@ -958,34 +960,71 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Function to show image preview modal
-    function showImagePreview(imageUrl, filename) {
-        // Set the image source
-        enlargedImage.src = imageUrl;
-        enlargedImage.alt = filename || 'Image Preview';
-        
-        // Update modal title
-        const modalTitle = document.getElementById('imagePreviewModalLabel');
-        if (modalTitle && filename) {
-            modalTitle.textContent = filename;
-        }
-        
-        // Show the modal
-        if (!imagePreviewModal) {
-            imagePreviewModal = new bootstrap.Modal(document.getElementById('imagePreviewModal'));
-        }
-        
-        // Set flag to indicate modal is open
-        isModalOpen = true;
-        
-        // Show the modal
-        imagePreviewModal.show();
-        
-        // Add event listener for when modal is hidden
-        document.getElementById('imagePreviewModal').addEventListener('hidden.bs.modal', () => {
-            isModalOpen = false;
-        }, { once: true });
+// Function to show image preview modal
+function showImagePreview(imageUrl, filename) {
+    console.log('Opening preview modal with image:', imageUrl);
+    
+    if (!imageUrl) {
+        console.error('Image URL is undefined or empty');
+        return;
     }
+    
+    // Get the modal element
+    const modalElement = document.getElementById('imagePreviewModal');
+    if (!modalElement) {
+        console.error('Modal element not found!');
+        return;
+    }
+    
+    // Get or create the modal body
+    const modalBody = modalElement.querySelector('.modal-body');
+    if (!modalBody) {
+        console.error('Modal body not found!');
+        return;
+    }
+    
+    // Update modal title
+    const modalTitle = modalElement.querySelector('.modal-title');
+    if (modalTitle && filename) {
+        modalTitle.textContent = filename;
+    }
+    
+    // Clear the modal body and create a fresh image
+    modalBody.innerHTML = '';
+    const imageElement = document.createElement('img');
+    imageElement.id = 'enlargedImage';
+    imageElement.className = 'img-fluid';
+    imageElement.alt = filename || 'Image Preview';
+    imageElement.src = imageUrl;
+    modalBody.appendChild(imageElement);
+    
+    // Initialize the modal instance if it doesn't exist yet
+    if (!imagePreviewModalInstance) {
+        try {
+            imagePreviewModalInstance = new bootstrap.Modal(modalElement);
+        } catch (error) {
+            console.error('Error initializing modal:', error);
+            return;
+        }
+    }
+    
+    // Set flag to indicate modal is open
+    isModalOpen = true;
+    
+    // Show the modal
+    try {
+        imagePreviewModalInstance.show();
+    } catch (error) {
+        console.error('Error showing modal:', error);
+        isModalOpen = false;
+        return;
+    }
+    
+    // Add event listener for when modal is hidden
+    modalElement.addEventListener('hidden.bs.modal', () => {
+        isModalOpen = false;
+    }, { once: true });
+}
     
     // Helper functions
     function showLoading(message) {
@@ -1103,11 +1142,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 li.remove();
                 updatePreview();
             });
-
+    
             // Add click event for image preview
             const imgElement = li.querySelector('.clickable-image');
             imgElement.addEventListener('click', (e) => {
-                e.stopPropagation(); // Prevent triggering other click events
+                e.stopPropagation();
                 showImagePreview(file.url, file.name);
             });
             
@@ -1121,7 +1160,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const fileArray = Array.from(files);
         
         // Don't clear previously uploaded files if they exist
-        // This change allows pasted images to be added to existing uploads
         if (!uploadedFiles) {
             uploadedFiles = [];
         }
@@ -1131,21 +1169,43 @@ document.addEventListener('DOMContentLoaded', () => {
             if (file.type.startsWith('image/')) {
                 const reader = new FileReader();
                 reader.onload = (e) => {
+                    const imageUrl = e.target.result;
+                    
+                    // Create a unique ID for the file for easier removal
+                    const fileId = `file-${Date.now()}-${index}`;
+                    file.id = fileId;
+                    
                     const div = document.createElement('div');
                     div.className = 'col-6 col-md-4 col-lg-3';
+                    div.dataset.fileId = fileId;
                     div.innerHTML = `
                         <div class="card">
-                            <img src="${e.target.result}" class="card-img-top clickable-image" alt="${file.name}" style="height: 120px; object-fit: cover;">
+                            <button type="button" class="remove-image-btn" data-file-id="${fileId}">
+                                <i class="fas fa-times"></i>
+                            </button>
+                            <img src="${imageUrl}" class="card-img-top clickable-image" alt="${file.name}" style="height: 120px; object-fit: cover;">
                             <div class="card-body p-2">
                                 <p class="card-text small text-truncate">${file.name}</p>
                             </div>
                         </div>
                     `;
-
+        
                     // Add click event for image preview
                     const imgElement = div.querySelector('.clickable-image');
-                    imgElement.addEventListener('click', () => {
-                        showImagePreview(e.target.result, file.name);
+                    imgElement.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        showImagePreview(imageUrl, file.name);
+                    });
+                    
+                    // Add click event for remove button
+                    const removeBtn = div.querySelector('.remove-image-btn');
+                    removeBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        // Remove from uploadedFiles array
+                        uploadedFiles = uploadedFiles.filter(f => f.id !== fileId);
+                        // Remove the preview element
+                        div.remove();
+                        console.log(`Removed file. Remaining files: ${uploadedFiles.length}`);
                     });
                     
                     uploadPreview.appendChild(div);
@@ -1158,328 +1218,636 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log(`Processed ${fileArray.length} files. Total files: ${uploadedFiles.length}`);
     }
     
-    // Render Mark Scheme function
-    function renderMarkScheme(data) {
-        markSchemeContent.innerHTML = '';
-        
-        // Check if data exists and has the required structure
-        if (!data || !data.mark_scheme) {
-            markSchemeContent.innerHTML = '<div class="alert alert-danger">Invalid mark scheme data</div>';
-            return;
-        }
-        
-        // Set form fields if available
-        if (data.subject) subjectInput.value = data.subject;
-        if (data.title) titleInput.value = data.title;
-        if (data.qualification_level) qualificationLevelSelect.value = data.qualification_level;
-        if (data.exam_board) examBoardSelect.value = data.exam_board;
-        
-        // Store top-level guidance and indicative content
-        const globalGuidance = data.guidance;
-        const globalIndicativeContent = data.indicative_content;
-        
-        // Copy top-level guidance and indicative content to assessment objectives if they don't have their own
-        if (data.mark_scheme && Array.isArray(data.mark_scheme)) {
-            data.mark_scheme.forEach(obj => {
-                // Copy global guidance to the objective if not already set
-                if (!obj.guidance && globalGuidance) {
-                    obj.guidance = globalGuidance;
-                }
-                
-                // Copy global indicative content to the objective if not already set
-                if (!obj.indicative_content && globalIndicativeContent) {
-                    obj.indicative_content = globalIndicativeContent;
-                }
-            });
-        }
-        
-        // Global sections for guidance or indicative content are removed since these should be 
-        // objective-specific only
-        
-        // Render each objective
-        data.mark_scheme.forEach((obj, objIndex) => {
-            const objectiveDiv = document.createElement('div');
-            objectiveDiv.className = 'mark-scheme-objective';
-            objectiveDiv.dataset.objIndex = objIndex;
-            
-            // Objective header
-            const headerDiv = document.createElement('div');
-            headerDiv.className = 'objective-header';
-            headerDiv.innerHTML = `
-                <div class="objective-title-area">
-                    <div contenteditable="true" class="editable-field objective-name">
-                        ${obj.objective || 'Unnamed Objective'}
-                    </div>
-                    ${obj.assessment_objective_id ? `<div class="assessment-objective-id">ID: ${obj.assessment_objective_id}</div>` : ''}
-                </div>
-                <div class="objective-controls">
-                    ${obj.weight ? `<div class="objective-weight">Weight: <span contenteditable="true" class="editable-field">${obj.weight}</span></div>` : ''}
-                    <button class="btn btn-sm btn-danger delete-objective-btn">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </div>
-            `;
-            objectiveDiv.appendChild(headerDiv);
-            
-            // Add event listener for objective name editing
-            const objectiveName = headerDiv.querySelector('.objective-name');
-            objectiveName.addEventListener('input', () => {
-                markSchemeData.mark_scheme[objIndex].objective = objectiveName.textContent;
-            });
-            
-            // Add event listener for weight editing if it exists
-            if (obj.weight) {
-                const weightField = headerDiv.querySelector('.objective-weight .editable-field');
-                weightField.addEventListener('input', () => {
-                    markSchemeData.mark_scheme[objIndex].weight = parseFloat(weightField.textContent) || 0;
-                });
+// This function updates the render process to automatically name new levels
+// and add drag-and-drop functionality for reordering levels
+function renderMarkScheme(data) {
+    markSchemeContent.innerHTML = '';
+    
+    // Check if data exists and has the required structure
+    if (!data || !data.mark_scheme) {
+        markSchemeContent.innerHTML = '<div class="alert alert-danger">Invalid mark scheme data</div>';
+        return;
+    }
+    
+    // Set form fields if available
+    if (data.subject) subjectInput.value = data.subject;
+    if (data.title) titleInput.value = data.title;
+    if (data.qualification_level) qualificationLevelSelect.value = data.qualification_level;
+    if (data.exam_board) examBoardSelect.value = data.exam_board;
+    
+    // Store top-level guidance and indicative content
+    const globalGuidance = data.guidance;
+    const globalIndicativeContent = data.indicative_content;
+    
+    // Copy top-level guidance and indicative content to assessment objectives if they don't have their own
+    if (data.mark_scheme && Array.isArray(data.mark_scheme)) {
+        data.mark_scheme.forEach(obj => {
+            // Copy global guidance to the objective if not already set
+            if (!obj.guidance && globalGuidance) {
+                obj.guidance = globalGuidance;
             }
             
-            // Add event listener for objective deletion
-            const deleteObjectiveBtn = headerDiv.querySelector('.delete-objective-btn');
-            deleteObjectiveBtn.addEventListener('click', () => {
-                if (confirm('Are you sure you want to delete this objective?')) {
-                    markSchemeData.mark_scheme.splice(objIndex, 1);
-                    renderMarkScheme(markSchemeData);
-                }
-            });
-            
-            // Levels
-            if (obj.mark_scheme && Array.isArray(obj.mark_scheme)) {
-                obj.mark_scheme.forEach((level, levelIndex) => {
-                    const levelDiv = document.createElement('div');
-                    levelDiv.className = 'mark-scheme-level';
-                    levelDiv.dataset.levelIndex = levelIndex;
-                    
-                    // Level header
-                    const levelHeader = document.createElement('div');
-                    levelHeader.className = 'level-header';
-                    levelHeader.innerHTML = `
-                        <div class="level-info">
-                            <div class="level-title">
-                                <span>Level </span>
-                                <span contenteditable="true" class="editable-field level-number">
-                                    ${level.level || '?'}
-                                </span>
-                            </div>
-                            <div class="level-marks">
-                                <span contenteditable="true" class="editable-field lower-mark">
-                                    ${level.lower_mark_bound || '0'}
-                                </span>
-                                <span> - </span>
-                                <span contenteditable="true" class="editable-field upper-mark">
-                                    ${level.upper_mark_bound || '0'}
-                                </span>
-                                <span> marks</span>
-                            </div>
-                        </div>
-                        <div class="level-controls">
-                            <button class="btn btn-sm btn-danger delete-level-btn">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </div>
-                    `;
-                    levelDiv.appendChild(levelHeader);
-                    
-                    // Add event listeners for level details editing
-                    const levelNumber = levelHeader.querySelector('.level-number');
-                    levelNumber.addEventListener('input', () => {
-                        markSchemeData.mark_scheme[objIndex].mark_scheme[levelIndex].level = levelNumber.textContent;
-                    });
-                    
-                    const lowerMark = levelHeader.querySelector('.lower-mark');
-                    lowerMark.addEventListener('input', () => {
-                        markSchemeData.mark_scheme[objIndex].mark_scheme[levelIndex].lower_mark_bound = 
-                            parseInt(lowerMark.textContent) || 0;
-                    });
-                    
-                    const upperMark = levelHeader.querySelector('.upper-mark');
-                    upperMark.addEventListener('input', () => {
-                        markSchemeData.mark_scheme[objIndex].mark_scheme[levelIndex].upper_mark_bound = 
-                            parseInt(upperMark.textContent) || 0;
-                    });
-                    
-                    // Add event listener for level deletion
-                    const deleteLevelBtn = levelHeader.querySelector('.delete-level-btn');
-                    deleteLevelBtn.addEventListener('click', () => {
-                        if (confirm('Are you sure you want to delete this level?')) {
-                            markSchemeData.mark_scheme[objIndex].mark_scheme.splice(levelIndex, 1);
-                            renderMarkScheme(markSchemeData);
-                        }
-                    });
-                    
-                    // Skills
-                    if (level.skills_descriptors && Array.isArray(level.skills_descriptors)) {
-                        const skillsSection = document.createElement('div');
-                        skillsSection.className = 'skills-section mt-3';
-                        skillsSection.innerHTML = '<h6 class="skills-title">Skills Descriptors:</h6>';
-                        
-                        const skillsList = document.createElement('ul');
-                        skillsList.className = 'skills-list';
-                        
-                        level.skills_descriptors.forEach((skill, skillIndex) => {
-                            const skillItem = document.createElement('li');
-                            skillItem.className = 'skill-item';
-                            skillItem.innerHTML = `
-                                <div class="skill-content">
-                                    <div contenteditable="true" class="editable-field skill-text">
-                                        ${skill || ''}
-                                    </div>
-                                </div>
-                                <div class="skill-controls">
-                                    <button class="btn btn-sm btn-outline-danger delete-skill-btn">
-                                        <i class="fas fa-times"></i>
-                                    </button>
-                                </div>
-                            `;
-                            
-                            // Add event listener for skill editing
-                            const skillText = skillItem.querySelector('.skill-text');
-                            skillText.addEventListener('input', () => {
-                                markSchemeData.mark_scheme[objIndex].mark_scheme[levelIndex].skills_descriptors[skillIndex] = 
-                                    skillText.textContent;
-                            });
-                            
-                            // Add event listener for skill deletion
-                            const deleteSkillBtn = skillItem.querySelector('.delete-skill-btn');
-                            deleteSkillBtn.addEventListener('click', () => {
-                                markSchemeData.mark_scheme[objIndex].mark_scheme[levelIndex].skills_descriptors.splice(skillIndex, 1);
-                                renderMarkScheme(markSchemeData);
-                            });
-                            
-                            skillsList.appendChild(skillItem);
-                        });
-                        
-                        skillsSection.appendChild(skillsList);
-                        
-                        // Add new skill button
-                        const addSkillBtn = document.createElement('button');
-                        addSkillBtn.className = 'btn btn-sm btn-outline-success mt-2';
-                        addSkillBtn.innerHTML = '<i class="fas fa-plus me-1"></i> Add Skill';
-                        addSkillBtn.addEventListener('click', () => {
-                            markSchemeData.mark_scheme[objIndex].mark_scheme[levelIndex].skills_descriptors.push('New skill');
-                            renderMarkScheme(markSchemeData);
-                        });
-                        
-                        skillsSection.appendChild(addSkillBtn);
-                        levelDiv.appendChild(skillsSection);
-                    }
-                    
-                    // Indicative Standard (if present)
-                    if (level.indicative_standard !== undefined) {
-                        const indicativeDiv = document.createElement('div');
-                        indicativeDiv.className = 'indicative-standard mt-3';
-                        indicativeDiv.innerHTML = `
-                            <h6 class="indicative-title">Indicative Standard:</h6>
-                            <div contenteditable="true" class="editable-field indicative-content p-2">
-                                ${level.indicative_standard || ''}
-                            </div>
-                        `;
-                        levelDiv.appendChild(indicativeDiv);
-                        
-                        // Add event listener for indicative standard editing
-                        const indicativeContent = indicativeDiv.querySelector('.indicative-content');
-                        indicativeContent.addEventListener('input', () => {
-                            markSchemeData.mark_scheme[objIndex].mark_scheme[levelIndex].indicative_standard = 
-                                indicativeContent.textContent || null;
-                        });
-                    }
-                    
-                    objectiveDiv.appendChild(levelDiv);
-                });
+            // Copy global indicative content to the objective if not already set
+            if (!obj.indicative_content && globalIndicativeContent) {
+                obj.indicative_content = globalIndicativeContent;
             }
+        });
+    }
+    
+    // Render each objective
+    data.mark_scheme.forEach((obj, objIndex) => {
+        const objectiveDiv = document.createElement('div');
+        objectiveDiv.className = 'mark-scheme-objective';
+        objectiveDiv.dataset.objIndex = objIndex;
+        
+        // Objective header
+        const headerDiv = document.createElement('div');
+        headerDiv.className = 'objective-header';
+        headerDiv.innerHTML = `
+            <div class="objective-title-area">
+                <div contenteditable="true" class="editable-field objective-name">
+                    ${obj.objective || 'Unnamed Objective'}
+                </div>
+                ${obj.assessment_objective_id ? `<div class="assessment-objective-id">ID: ${obj.assessment_objective_id}</div>` : ''}
+            </div>
+            <div class="objective-controls">
+                <div class="objective-weight">Weight: <span contenteditable="true" class="editable-field">${obj.weight !== undefined && obj.weight !== null ? obj.weight : ''}</span></div>
+                <button class="btn btn-sm btn-primary balance-marks-btn me-2">
+                    <i class="fas fa-balance-scale me-1"></i>Balance
+                </button>
+                <button class="btn btn-sm btn-danger delete-objective-btn">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        `;
+        objectiveDiv.appendChild(headerDiv);
+
+        // Add event listener for the balance button
+        const balanceBtn = headerDiv.querySelector('.balance-marks-btn');
+        balanceBtn.addEventListener('click', () => {
+            // Get all levels for this objective
+            const levelElements = objectiveDiv.querySelectorAll('.mark-scheme-level');
+            const levels = Array.from(levelElements).map(levelElement => {
+                const levelIndex = parseInt(levelElement.dataset.levelIndex);
+                return markSchemeData.mark_scheme[objIndex].mark_scheme[levelIndex];
+            });
             
-            // Add new level button
-            const addLevelBtn = document.createElement('button');
-            addLevelBtn.className = 'btn btn-outline-primary btn-sm mb-3 mt-3';
-            addLevelBtn.innerHTML = '<i class="fas fa-plus me-1"></i> Add Level';
-            addLevelBtn.addEventListener('click', () => {
-                if (!markSchemeData.mark_scheme[objIndex].mark_scheme) {
-                    markSchemeData.mark_scheme[objIndex].mark_scheme = [];
+            // Apply balancing to the levels
+            const balancedLevels = balanceMarkSchemeMarks([...levels]);
+            
+            // Update mark scheme data
+            markSchemeData.mark_scheme[objIndex].mark_scheme = balancedLevels;
+            
+            // Update UI with balanced values
+            levelElements.forEach(levelElement => {
+                const levelIndex = parseInt(levelElement.dataset.levelIndex);
+                const level = balancedLevels[levelIndex];
+                
+                const lowerMarkElement = levelElement.querySelector('.lower-mark');
+                const upperMarkElement = levelElement.querySelector('.upper-mark');
+                
+                if (lowerMarkElement && upperMarkElement) {
+                    lowerMarkElement.textContent = level.lower_mark_bound;
+                    upperMarkElement.textContent = level.upper_mark_bound;
                 }
-                
-                markSchemeData.mark_scheme[objIndex].mark_scheme.push({
-                    level: 'New',
-                    lower_mark_bound: 0,
-                    upper_mark_bound: 0,
-                    skills_descriptors: ['New skill descriptor'],
-                    indicative_standard: null
-                });
-                
-                renderMarkScheme(markSchemeData);
             });
             
-            objectiveDiv.appendChild(addLevelBtn);
+            // Show success notification
+            const notification = document.createElement('div');
+            notification.className = 'alert alert-success balance-notification';
+            notification.innerHTML = `<i class="fas fa-check-circle me-2"></i>Mark scheme balanced successfully!`;
+            notification.style.position = 'absolute';
+            notification.style.top = '10px';
+            notification.style.right = '10px';
+            notification.style.zIndex = '1000';
+            notification.style.opacity = '0';
+            notification.style.transition = 'opacity 0.3s ease';
             
-            // Objective-specific Indicative Content section (always show it - at the bottom)
-            const indicativeContentDiv = document.createElement('div');
-            indicativeContentDiv.className = 'indicative-content-section mt-4';
-            indicativeContentDiv.innerHTML = `
-                <div class="section-header">
-                    <h5 class="indicative-content-title">Indicative Content</h5>
-                </div>
-                <div contenteditable="true" class="editable-field indicative-content-text p-2">
-                    ${obj.indicative_content || ''}
-                </div>
-            `;
-            objectiveDiv.appendChild(indicativeContentDiv);
+            objectiveDiv.style.position = 'relative';
+            objectiveDiv.appendChild(notification);
             
-            // Add event listener for indicative content editing
-            const indicativeContentText = indicativeContentDiv.querySelector('.indicative-content-text');
-            indicativeContentText.addEventListener('input', () => {
-                markSchemeData.mark_scheme[objIndex].indicative_content = indicativeContentText.textContent.trim() || null;
-            });
-            
-            // Objective-specific Guidance section (always show it - at the bottom)
-            const guidanceDiv = document.createElement('div');
-            guidanceDiv.className = 'guidance-section mb-3 mt-4';
-            guidanceDiv.innerHTML = `
-                <div class="section-header">
-                    <h5 class="guidance-title">Guidance</h5>
-                </div>
-                <div contenteditable="true" class="editable-field guidance-content p-2">
-                    ${obj.guidance || ''}
-                </div>
-            `;
-            objectiveDiv.appendChild(guidanceDiv);
-            
-            // Add event listener for guidance editing
-            const guidanceContent = guidanceDiv.querySelector('.guidance-content');
-            guidanceContent.addEventListener('input', () => {
-                markSchemeData.mark_scheme[objIndex].guidance = guidanceContent.textContent.trim() || null;
-            });
-            
-            markSchemeContent.appendChild(objectiveDiv);
+            // Show and then fade out notification
+            setTimeout(() => {
+                notification.style.opacity = '1';
+                setTimeout(() => {
+                    notification.style.opacity = '0';
+                    setTimeout(() => notification.remove(), 300);
+                }, 2000);
+            }, 10);
         });
         
-        // Add new objective button
-        const addObjectiveBtn = document.createElement('button');
-        addObjectiveBtn.className = 'btn btn-primary mb-4';
-        addObjectiveBtn.innerHTML = '<i class="fas fa-plus me-1"></i> Add Assessment Objective';
-        addObjectiveBtn.addEventListener('click', () => {
-            const newObj = 'AO' + (markSchemeData.mark_scheme.length + 1);
-            markSchemeData.mark_scheme.push({
-                objective: newObj,
-                mark_scheme: [
-                    {
-                        level: '1',
-                        lower_mark_bound: 1,
-                        upper_mark_bound: 5,
-                        skills_descriptors: ['New skill descriptor'],
-                        indicative_standard: null
+        // Add event listener for objective name editing
+        const objectiveName = headerDiv.querySelector('.objective-name');
+        objectiveName.addEventListener('input', () => {
+            markSchemeData.mark_scheme[objIndex].objective = objectiveName.textContent.trim();
+        });
+        
+        // Add event listener for weight editing
+        const weightField = headerDiv.querySelector('.objective-weight .editable-field');
+        weightField.addEventListener('input', () => {
+            const weightValue = weightField.textContent.trim();
+            if (weightValue === '') {
+                // If weight is empty, set to null
+                markSchemeData.mark_scheme[objIndex].weight = null;
+            } else {
+                // Convert to decimal number (float)
+                markSchemeData.mark_scheme[objIndex].weight = parseFloat(weightValue) || 0;
+            }
+            
+            // Update is_weighted based on whether any objective has a weight
+            markSchemeData.is_weighted = calculateIsWeighted(markSchemeData);
+        });
+        
+        // Add event listener for objective deletion
+        const deleteObjectiveBtn = headerDiv.querySelector('.delete-objective-btn');
+        deleteObjectiveBtn.addEventListener('click', () => {
+            if (confirm('Are you sure you want to delete this objective?')) {
+                markSchemeData.mark_scheme.splice(objIndex, 1);
+                renderMarkScheme(markSchemeData);
+            }
+        });
+        
+        // Create levels container for sortable functionality
+        const levelsContainer = document.createElement('div');
+        levelsContainer.className = 'levels-container';
+        levelsContainer.dataset.objIndex = objIndex;
+        objectiveDiv.appendChild(levelsContainer);
+        
+        // Levels
+        if (obj.mark_scheme && Array.isArray(obj.mark_scheme)) {
+            obj.mark_scheme.forEach((level, levelIndex) => {
+                const levelDiv = document.createElement('div');
+                levelDiv.className = 'mark-scheme-level';
+                levelDiv.dataset.levelIndex = levelIndex;
+                
+                // Level header
+                const levelHeader = document.createElement('div');
+                levelHeader.className = 'level-header';
+                levelHeader.innerHTML = `
+                    <div class="level-drag-handle" title="Drag to reorder level"><i class="fas fa-grip-lines"></i></div>
+                    <div class="level-info">
+                        <div class="level-title">
+                            <span>Level </span>
+                            <span contenteditable="true" class="editable-field level-number">
+                                ${level.level || '?'}
+                            </span>
+                        </div>
+                        <div class="level-marks">
+                            <span contenteditable="true" class="editable-field lower-mark">
+                                ${level.lower_mark_bound || '0'}
+                            </span>
+                            <span> - </span>
+                            <span contenteditable="true" class="editable-field upper-mark">
+                                ${level.upper_mark_bound || '0'}
+                            </span>
+                            <span> marks</span>
+                        </div>
+                    </div>
+                    <div class="level-controls">
+                        <button class="btn btn-sm btn-danger delete-level-btn">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                `;
+                levelDiv.appendChild(levelHeader);
+                
+                // Add event listeners for level details editing
+                const levelNumber = levelHeader.querySelector('.level-number');
+                levelNumber.addEventListener('input', () => {
+                    markSchemeData.mark_scheme[objIndex].mark_scheme[levelIndex].level = levelNumber.textContent.trim();
+                });
+                
+                const lowerMark = levelHeader.querySelector('.lower-mark');
+                lowerMark.addEventListener('input', () => {
+                    markSchemeData.mark_scheme[objIndex].mark_scheme[levelIndex].lower_mark_bound = 
+                        parseInt(lowerMark.textContent.trim()) || 0;
+                });
+                
+                const upperMark = levelHeader.querySelector('.upper-mark');
+                upperMark.addEventListener('input', () => {
+                    markSchemeData.mark_scheme[objIndex].mark_scheme[levelIndex].upper_mark_bound = 
+                        parseInt(upperMark.textContent.trim()) || 0;
+                });
+                
+                // Add event listener for level deletion
+                const deleteLevelBtn = levelHeader.querySelector('.delete-level-btn');
+                deleteLevelBtn.addEventListener('click', () => {
+                    if (confirm('Are you sure you want to delete this level?')) {
+                        markSchemeData.mark_scheme[objIndex].mark_scheme.splice(levelIndex, 1);
+                        
+                        // Re-number the levels after deletion
+                        renumberLevels(markSchemeData.mark_scheme[objIndex].mark_scheme);
+                        
+                        renderMarkScheme(markSchemeData);
                     }
-                ],
-                weight: null
+                });
+                
+                // Skills
+                if (level.skills_descriptors && Array.isArray(level.skills_descriptors)) {
+                    const skillsSection = document.createElement('div');
+                    skillsSection.className = 'skills-section mt-3';
+                    skillsSection.innerHTML = '<h6 class="skills-title">Skills Descriptors:</h6>';
+                    
+                    const skillsList = document.createElement('ul');
+                    skillsList.className = 'skills-list';
+                    
+                    level.skills_descriptors.forEach((skill, skillIndex) => {
+                        const skillItem = document.createElement('li');
+                        skillItem.className = 'skill-item';
+                        skillItem.innerHTML = `
+                            <div class="skill-content">
+                                <div contenteditable="true" class="editable-field skill-text">
+                                    ${skill || ''}
+                                </div>
+                            </div>
+                            <div class="skill-controls">
+                                <button class="btn btn-sm btn-outline-danger delete-skill-btn">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        `;
+                        
+                        // Add event listener for skill editing
+                        const skillText = skillItem.querySelector('.skill-text');
+                        skillText.addEventListener('input', () => {
+                            markSchemeData.mark_scheme[objIndex].mark_scheme[levelIndex].skills_descriptors[skillIndex] = 
+                                skillText.textContent.trim();
+                        });
+                        
+                        // Add event listener for skill deletion
+                        const deleteSkillBtn = skillItem.querySelector('.delete-skill-btn');
+                        deleteSkillBtn.addEventListener('click', () => {
+                            markSchemeData.mark_scheme[objIndex].mark_scheme[levelIndex].skills_descriptors.splice(skillIndex, 1);
+                            renderMarkScheme(markSchemeData);
+                        });
+                        
+                        skillsList.appendChild(skillItem);
+                    });
+                    
+                    skillsSection.appendChild(skillsList);
+                    
+                    // Add new skill button
+                    const addSkillBtn = document.createElement('button');
+                    addSkillBtn.className = 'btn btn-sm btn-outline-success mt-2';
+                    addSkillBtn.innerHTML = '<i class="fas fa-plus me-1"></i> Add Skill';
+                    addSkillBtn.addEventListener('click', () => {
+                        markSchemeData.mark_scheme[objIndex].mark_scheme[levelIndex].skills_descriptors.push('New skill');
+                        renderMarkScheme(markSchemeData);
+                    });
+                    
+                    skillsSection.appendChild(addSkillBtn);
+                    levelDiv.appendChild(skillsSection);
+                }
+                
+                // Indicative Standard (if present)
+                if (level.indicative_standard !== undefined) {
+                    const indicativeDiv = document.createElement('div');
+                    indicativeDiv.className = 'indicative-standard mt-3';
+                    indicativeDiv.innerHTML = `
+                        <h6 class="indicative-title">Indicative Standard:</h6>
+                        <div contenteditable="true" class="editable-field indicative-content p-2">
+                            ${level.indicative_standard || ''}
+                        </div>
+                    `;
+                    levelDiv.appendChild(indicativeDiv);
+                    
+                    // Add event listener for indicative standard editing
+                    const indicativeContent = indicativeDiv.querySelector('.indicative-content');
+                    indicativeContent.addEventListener('input', () => {
+                        markSchemeData.mark_scheme[objIndex].mark_scheme[levelIndex].indicative_standard = 
+                            indicativeContent.textContent.trim() || null;
+                    });
+                }
+                
+                levelsContainer.appendChild(levelDiv);
+            });
+        }
+        
+        // Initialize Sortable.js for level reordering
+        const levelsSortable = new Sortable(levelsContainer, {
+            animation: 150,
+            handle: '.level-drag-handle',
+            ghostClass: 'sortable-ghost',
+            chosenClass: 'sortable-chosen',
+            dragClass: 'sortable-drag',
+            scroll: false, // Disable automatic scrolling
+            scrollSensitivity: 0, // Disable scroll sensitivity
+            onStart: function(evt) {
+                // Get the container that holds all levels
+                const levelsContainer = evt.from;
+                
+                // Collapse all levels when drag starts
+                const allLevels = levelsContainer.querySelectorAll('.mark-scheme-level');
+                allLevels.forEach(level => {
+                    // Store current height for smooth transition back
+                    level.dataset.originalHeight = level.offsetHeight + 'px';
+                    // Add collapsing class
+                    level.classList.add('level-collapsing');
+                    // After small delay for animation to start, add collapsed class
+                    setTimeout(() => {
+                        level.classList.add('level-collapsed');
+                    }, 50);
+                });
+                
+                // Add a class to the container to indicate active sorting
+                levelsContainer.classList.add('sorting-active');
+                
+                // Center the view on the levels container
+                setTimeout(() => {
+                    const containerRect = levelsContainer.getBoundingClientRect();
+                    const containerMiddle = containerRect.top + (containerRect.height / 2);
+                    const viewportMiddle = window.innerHeight / 2;
+                    const scrollAdjustment = containerMiddle - viewportMiddle;
+                    
+                    window.scrollTo({
+                        top: window.pageYOffset + scrollAdjustment,
+                        behavior: 'smooth'
+                    });
+                }, 100); // Small delay to ensure collapse has started
+                
+                // Prevent default autoscroll behavior from SortableJS
+                this.options.scroll = false;
+                this.options.scrollSensitivity = 0;
+            },
+            onEnd: function(evt) {
+                // Get the container
+                const levelsContainer = evt.from;
+                
+                // Remove the sorting active class
+                levelsContainer.classList.remove('sorting-active');
+                
+                // Expand all levels when drag ends
+                const allLevels = levelsContainer.querySelectorAll('.mark-scheme-level');
+                allLevels.forEach(level => {
+                    // Remove collapsed class first
+                    level.classList.remove('level-collapsed');
+                    // After animation completes, remove collapsing class
+                    setTimeout(() => {
+                        level.classList.remove('level-collapsing');
+                    }, 300); // Match to CSS transition duration
+                });
+                
+                // Update the markSchemeData object when levels are reordered
+                const oldIndex = evt.oldIndex;
+                const newIndex = evt.newIndex;
+                
+                if (oldIndex !== newIndex) {
+                    // Get the current levels array
+                    const levels = markSchemeData.mark_scheme[objIndex].mark_scheme;
+                    
+                    // Move the level to the new position
+                    const movedLevel = levels.splice(oldIndex, 1)[0];
+                    levels.splice(newIndex, 0, movedLevel);
+                    
+                    // Re-number the levels after reordering
+                    renumberLevels(levels);
+                    
+                    // Re-render the mark scheme to reflect the changes
+                    // But wait until animation completes
+                    setTimeout(() => {
+                        renderMarkScheme(markSchemeData);
+                    }, 350);
+                }
+            }
+        });
+        
+        // Add new level button
+        const addLevelBtn = document.createElement('button');
+        addLevelBtn.className = 'btn btn-outline-primary btn-sm mb-3 mt-3';
+        addLevelBtn.innerHTML = '<i class="fas fa-plus me-1"></i> Add Level';
+        addLevelBtn.addEventListener('click', () => {
+            if (!markSchemeData.mark_scheme[objIndex].mark_scheme) {
+                markSchemeData.mark_scheme[objIndex].mark_scheme = [];
+            }
+            
+            // Find the next level number
+            const nextLevelNumber = getNextLevelNumber(markSchemeData.mark_scheme[objIndex].mark_scheme);
+            
+            markSchemeData.mark_scheme[objIndex].mark_scheme.push({
+                level: nextLevelNumber.toString(),
+                lower_mark_bound: 0,
+                upper_mark_bound: 0,
+                skills_descriptors: ['New skill descriptor'],
+                indicative_standard: null
             });
             
             renderMarkScheme(markSchemeData);
         });
         
-        markSchemeContent.appendChild(addObjectiveBtn);
+        objectiveDiv.appendChild(addLevelBtn);
         
-        // Initialize searchable subject dropdown
-        initSubjectDropdown();
+        // Objective-specific Indicative Content section (always show it - at the bottom)
+        const indicativeContentDiv = document.createElement('div');
+        indicativeContentDiv.className = 'indicative-content-section mt-4';
+        indicativeContentDiv.innerHTML = `
+            <div class="section-header">
+                <h5 class="indicative-content-title">Indicative Content</h5>
+            </div>
+            <div contenteditable="true" class="editable-field indicative-content-text p-2">
+                ${obj.indicative_content || ''}
+            </div>
+        `;
+        objectiveDiv.appendChild(indicativeContentDiv);
+        
+        // Add event listener for indicative content editing
+        const indicativeContentText = indicativeContentDiv.querySelector('.indicative-content-text');
+        indicativeContentText.addEventListener('input', () => {
+            markSchemeData.mark_scheme[objIndex].indicative_content = indicativeContentText.textContent.trim() || null;
+        });
+        
+        // Objective-specific Guidance section (always show it - at the bottom)
+        const guidanceDiv = document.createElement('div');
+        guidanceDiv.className = 'guidance-section mb-3 mt-4';
+        guidanceDiv.innerHTML = `
+            <div class="section-header">
+                <h5 class="guidance-title">Guidance</h5>
+            </div>
+            <div contenteditable="true" class="editable-field guidance-content p-2">
+                ${obj.guidance || ''}
+            </div>
+        `;
+        objectiveDiv.appendChild(guidanceDiv);
+        
+        // Add event listener for guidance editing
+        const guidanceContent = guidanceDiv.querySelector('.guidance-content');
+        guidanceContent.addEventListener('input', () => {
+            markSchemeData.mark_scheme[objIndex].guidance = guidanceContent.textContent.trim() || null;
+        });
+        
+        markSchemeContent.appendChild(objectiveDiv);
+    });
+    
+    // Add new objective button
+    const addObjectiveBtn = document.createElement('button');
+    addObjectiveBtn.className = 'btn btn-primary mb-4';
+    addObjectiveBtn.innerHTML = '<i class="fas fa-plus me-1"></i> Add Assessment Objective';
+    addObjectiveBtn.addEventListener('click', () => {
+        const newObj = 'AO' + (markSchemeData.mark_scheme.length + 1);
+        markSchemeData.mark_scheme.push({
+            objective: newObj,
+            mark_scheme: [
+                {
+                    level: '1',
+                    lower_mark_bound: 1,
+                    upper_mark_bound: 5,
+                    skills_descriptors: ['New skill descriptor'],
+                    indicative_standard: null
+                }
+            ],
+            weight: null
+        });
+        
+        renderMarkScheme(markSchemeData);
+    });
+    
+    markSchemeContent.appendChild(addObjectiveBtn);
+    
+    // Initialize searchable subject dropdown
+    initSubjectDropdown();
+}
+
+// Helper function to find the next level number
+function getNextLevelNumber(levels) {
+    if (!levels || levels.length === 0) {
+        return 1; // Start with level 1 if no levels exist
     }
+    
+    // Extract current level numbers as integers
+    const levelNumbers = levels.map(level => {
+        const levelNum = parseInt(level.level);
+        return isNaN(levelNum) ? 0 : levelNum;
+    });
+    
+    // Find the maximum level number
+    const maxLevel = Math.max(...levelNumbers);
+    
+    // Return the next level number (max + 1)
+    return maxLevel + 1;
+}
+
+// Helper function to re-number levels based on their position
+function renumberLevels(levels) {
+    if (!levels || !Array.isArray(levels)) return;
+    
+    // Sort levels by position (highest to lowest)
+    // We assume the levels array is already in the desired order after drag & drop
+    
+    // Assign level numbers from highest to lowest
+    let currentLevelNumber = levels.length - 1;
+    
+    // We'll keep level "0" as is (if it exists)
+    levels.forEach((level, index) => {
+        if (level.level === "0") {
+            // Keep level 0 as is
+            return;
+        }
+        
+        level.level = currentLevelNumber.toString();
+        currentLevelNumber--;
+        
+        // Ensure we don't go below 0
+        if (currentLevelNumber < 0) {
+            currentLevelNumber = 0;
+        }
+    });
+}
+
+// Add CSS for sortable level functionality
+function addLevelSortingStyles() {
+    const style = document.createElement('style');
+    style.textContent = `
+        .level-drag-handle {
+            cursor: grab;
+            padding: 0 10px;
+            color: #aaa;
+            display: flex;
+            align-items: center;
+        }
+        
+        .level-drag-handle:hover {
+            color: #3498db;
+        }
+        
+        .level-header {
+            display: flex;
+            justify-content: flex-start;
+            align-items: center;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        .level-info {
+            flex-grow: 1;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .level-controls {
+            margin-left: auto;
+        }
+        
+        /* Collapsing animation styles */
+        .level-collapsing {
+            transition: all 0.3s ease-in-out;
+            overflow: hidden;
+        }
+        
+        .level-collapsed {
+            max-height: 60px !important; /* Only show header */
+            overflow: hidden;
+        }
+        
+        .level-collapsed .skills-section,
+        .level-collapsed .indicative-standard {
+            opacity: 0;
+        }
+        
+        /* Keep the level being dragged visible */
+        .sortable-ghost {
+            opacity: 0.4;
+            background-color: #e3f2fd !important;
+            max-height: 60px !important;
+        }
+        
+        .sortable-chosen {
+            background-color: #f8f9fa;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            z-index: 100;
+        }
+        
+        .sortable-drag {
+            background-color: #fff;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+            max-height: 60px !important;
+            overflow: hidden;
+        }
+        
+        /* Enhanced indication when in reordering mode */
+        .levels-container.sorting-active {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 5px;
+        }
+        
+        /* Make collapsed level headers more readable */
+        .level-collapsed .level-header {
+            margin-bottom: 0;
+            border-bottom: none;
+            background-color: #f9f9f9;
+            border-radius: 8px;
+            padding: 8px;
+        }
+    `;
+    document.head.appendChild(style);
+}
+
+// Initialize level sorting styles when the page loads
+document.addEventListener('DOMContentLoaded', function() {
+    // Add CSS for level sorting
+    addLevelSortingStyles();
+});
     
     // Validate Mark Scheme
     async function validateMarkScheme(markSchemeData) {
@@ -1821,6 +2189,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const title = titleInput.value;
         const qualificationLevel = qualificationLevelSelect.value;
         const examBoard = examBoardSelect.value;
+    
         
         // Create a copy of the mark scheme data
         const displayData = JSON.parse(JSON.stringify(markSchemeData));
@@ -1828,6 +2197,7 @@ document.addEventListener('DOMContentLoaded', () => {
         displayData.qualification_level = qualificationLevel;
         displayData.exam_board = examBoard;
         displayData.title = title;
+        displayData.is_weighted = calculateIsWeighted(displayData);
         
         // Get all objectives
         const objectives = displayData.mark_scheme || [];
@@ -1882,20 +2252,7 @@ document.addEventListener('DOMContentLoaded', () => {
             allSameIndicativeContent = false;
         }
         
-        // If all objectives have the same guidance and indicative content, move it to the top level
-        if (allSameGuidance) {
-            displayData.guidance = commonGuidance;
-            objectives.forEach(obj => {
-                delete obj.guidance;
-            });
-        }
         
-        if (allSameIndicativeContent) {
-            displayData.indicative_content = commonIndicativeContent;
-            objectives.forEach(obj => {
-                delete obj.indicative_content;
-            });
-        }
         
         // Get global guidance if it exists
         const globalGuidanceElement = document.querySelector('.global-guidance-section .guidance-content');
@@ -1908,7 +2265,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         obj.guidance = globalGuidance;
                     }
                 });
-                displayData.guidance = globalGuidance;
             }
         }
         
@@ -1923,7 +2279,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         obj.indicative_content = globalIndicative;
                     }
                 });
-                displayData.indicative_content = globalIndicative;
             }
         }
         
@@ -1991,15 +2346,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 is_weighted: displayData.is_weighted
             };
             
-            // If we determined that guidance and indicative content should be at the top level, add them
-            if (allSameGuidance) {
-                finalOrderedData.guidance = commonGuidance;
-            }
-            
-            if (allSameIndicativeContent) {
-                finalOrderedData.indicative_content = commonIndicativeContent;
-            }
-            
+
             hideLoading();
             
             // Set flag to indicate modal is open
@@ -2046,6 +2393,7 @@ document.addEventListener('DOMContentLoaded', () => {
         submitData.qualification_level = qualificationLevel;
         submitData.exam_board = examBoard;
         submitData.title = title;
+        submitData.is_weighted = calculateIsWeighted(submitData);
         
         // Get all objectives
         const objectives = submitData.mark_scheme || [];
@@ -2079,7 +2427,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         obj.guidance = globalGuidance;
                     }
                 });
-                submitData.guidance = globalGuidance;
             }
         }
         
@@ -2094,7 +2441,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         obj.indicative_content = globalIndicative;
                     }
                 });
-                submitData.indicative_content = globalIndicative;
             }
         }
         
@@ -2198,7 +2544,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialize the countryside theme
     setupCountrysideTheme();
 
-    // Handle clipboard paste events for images
     function handlePaste(e) {
         // Check if we're in image input mode
         if (currentInputType !== 'image') return;
@@ -2223,27 +2568,48 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Create a new File object (more compatible than blob)
                 const file = new File([blob], filename, { type: blob.type });
                 
+                // Add unique ID to file
+                const fileId = `file-paste-${Date.now()}`;
+                file.id = fileId;
+                
                 // Add to uploadedFiles array
                 uploadedFiles.push(file);
                 
                 // Create a preview
                 const reader = new FileReader();
                 reader.onload = (event) => {
+                    const imageUrl = event.target.result;
                     const div = document.createElement('div');
                     div.className = 'col-6 col-md-4 col-lg-3';
+                    div.dataset.fileId = fileId;
                     div.innerHTML = `
                         <div class="card">
-                            <img src="${event.target.result}" class="card-img-top clickable-image" alt="${filename}" style="height: 120px; object-fit: cover;">
+                            <button type="button" class="remove-image-btn" data-file-id="${fileId}">
+                                <i class="fas fa-times"></i>
+                            </button>
+                            <img src="${imageUrl}" class="card-img-top clickable-image" alt="${filename}" style="height: 120px; object-fit: cover;">
                             <div class="card-body p-2">
                                 <p class="card-text small text-truncate">${filename}</p>
                             </div>
                         </div>
                     `;
-
+        
                     // Add click event for image preview
                     const imgElement = div.querySelector('.clickable-image');
-                    imgElement.addEventListener('click', () => {
-                        showImagePreview(event.target.result, filename);
+                    imgElement.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        showImagePreview(imageUrl, filename);
+                    });
+                    
+                    // Add click event for remove button
+                    const removeBtn = div.querySelector('.remove-image-btn');
+                    removeBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        // Remove from uploadedFiles array
+                        uploadedFiles = uploadedFiles.filter(f => f.id !== fileId);
+                        // Remove the preview element
+                        div.remove();
+                        console.log(`Removed file. Remaining files: ${uploadedFiles.length}`);
                     });
                     
                     uploadPreview.appendChild(div);
@@ -2355,4 +2721,74 @@ document.addEventListener('DOMContentLoaded', () => {
     if (restartBtn) {
         restartBtn.addEventListener('click', resetApp);
     }
+
+    function balanceMarkSchemeMarks(markSchemeLevels) {
+        // Filter out level 0 which always gets 0 marks
+        const levelsNonZero = markSchemeLevels.filter(level => parseInt(level.level) > 0);
+        if (levelsNonZero.length === 0) {
+            console.error("No levels above 0 in the mark scheme.");
+            return markSchemeLevels;
+        }
+        
+        // Sort levels by number (descending order): Level 4, Level 3, Level 2, Level 1
+        const sortedLevels = [...levelsNonZero].sort((a, b) => parseInt(b.level) - parseInt(a.level));
+        
+        // Get total marks from the highest level's upper mark bound
+        const totalMarks = sortedLevels[0].upper_mark_bound;
+        
+        // Calculate how many marks each level should get
+        const totalLevels = sortedLevels.length;
+        const baseInterval = Math.floor(totalMarks / totalLevels);
+        const remainder = totalMarks % totalLevels;
+        
+        // Create a result array to hold the updated levels
+        const resultLevels = [];
+        
+        // Start at the highest mark and work downward
+        let currentMark = totalMarks;
+        
+        // Assign marks to each level from highest to lowest
+        for (let i = 0; i < sortedLevels.length; i++) {
+            const level = sortedLevels[i];
+            const marksForThisLevel = baseInterval + (i < remainder ? 1 : 0);
+            
+            const upperBound = currentMark;
+            const lowerBound = Math.max(1, currentMark - marksForThisLevel + 1);
+            
+            resultLevels.push({
+                ...level,
+                upper_mark_bound: upperBound,
+                lower_mark_bound: lowerBound
+            });
+            
+            currentMark = lowerBound - 1;
+        }
+        
+        // Map back to the original array structure
+        return markSchemeLevels.map(level => {
+            if (parseInt(level.level) === 0) {
+                return { ...level, lower_mark_bound: 0, upper_mark_bound: 0 };
+            } else {
+                // Find the corresponding updated level
+                const updatedLevel = resultLevels.find(ul => ul.level === level.level);
+                return updatedLevel || level;
+            }
+        });
+    }
+
+    // Function to calculate if the mark scheme is weighted
+    function calculateIsWeighted(data) {
+        if (!data || !data.mark_scheme || !Array.isArray(data.mark_scheme)) {
+            return false;
+        }
+        
+        // Check if any objective has a non-null weight
+        return data.mark_scheme.some(obj => 
+            obj.weight !== undefined && 
+            obj.weight !== null && 
+            obj.weight !== '' && 
+            !isNaN(parseFloat(obj.weight))
+        );
+    }
+    
 });
