@@ -136,6 +136,7 @@ Enjoy the countryside while you wait for the mark scheme to be extracted :)
 ## Future Enhancements
 
 - **Database Integration**: Add ability for uploading mark scheme to the database.
+- **PDF ingestion**: Add the ability to ingest PDFs and extract multiple mark schemes at once.
 
 
 ## Acknowledgments
