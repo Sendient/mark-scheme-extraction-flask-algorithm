@@ -930,7 +930,7 @@ def navigate_mark_scheme():
         return jsonify({'error': f'Error navigating mark schemes: {str(e)}'}), 500
 
 @app.route('/extract_mark_scheme', methods=['POST'])
-async def extract_mark_scheme_from_pdf():
+def extract_mark_scheme_from_pdf():
     try:
         if 'file' not in request.files:
             return jsonify({'error': 'No file part'}), 400
