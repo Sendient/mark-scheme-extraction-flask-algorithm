@@ -157,7 +157,7 @@ def process_pdf_with_mistral(pdf_path):
                     },
                     {
                         "type": "document_url",
-                        "document_url": uploaded_file.id
+                        "document_url": f"https://api.mistral.ai/v1/files/{uploaded_file.id}"
                     }
                 ]
             }
@@ -201,7 +201,7 @@ def process_pdf_with_mistral(pdf_path):
                         },
                         {
                             "type": "document_url",
-                            "document_url": uploaded_file.id
+                            "document_url": f"https://api.mistral.ai/v1/files/{uploaded_file.id}"
                         }
                     ]
                 }
