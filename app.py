@@ -133,14 +133,39 @@ def process_pdf_with_mistral(pdf_path):
         client = Mistral(api_key=MISTRAL_API_KEY)
         
         with open(pdf_path, "rb") as f:
-            pdf_bytes = f.read()
+            pdf_content = f.read()
+        
+        file_name = os.path.basename(pdf_path)
+        
+        uploaded_file = client.files.upload(
+            file={
+                "file_name": file_name,
+                "content": pdf_content,
+            },
+            purpose="ocr"
+        )
         
         mark_schemes = []
         
-        response = client.documents.qa(
-            document=pdf_bytes,
+        messages = [
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": "How many separate mark schemes are in this document? Just provide a number."
+                    },
+                    {
+                        "type": "document_url",
+                        "document_url": uploaded_file.id
+                    }
+                ]
+            }
+        ]
+        
+        response = client.chat.complete(
             model="mistral-large-2-2024-04-01",
-            prompt="How many separate mark schemes are in this document? Just provide a number."
+            messages=messages
         )
         
         try:
@@ -166,10 +191,25 @@ def process_pdf_with_mistral(pdf_path):
             {JsonOutputParser(pydantic_object=AIExtractedMarkSchemeModel).get_format_instructions()}
             """
             
-            response = client.documents.qa(
-                document=pdf_bytes,
+            messages = [
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": prompt
+                        },
+                        {
+                            "type": "document_url",
+                            "document_url": uploaded_file.id
+                        }
+                    ]
+                }
+            ]
+            
+            response = client.chat.complete(
                 model="mistral-large-2-2024-04-01",
-                prompt=prompt
+                messages=messages
             )
             
             try:
