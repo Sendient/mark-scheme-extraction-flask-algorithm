@@ -16,7 +16,7 @@ from langchain_openai import AzureChatOpenAI
 from langchain_core.output_parsers import PydanticOutputParser, JsonOutputParser
 import PyPDF2
 from pdf2image import convert_from_path
-from mistralai.client import MistralClient
+from mistralai import Mistral
 
 # Import enums and models from output.py
 from static.python.output import (
@@ -130,14 +130,14 @@ def process_pdf_with_mistral(pdf_path):
         return []
     
     try:
-        client = MistralClient(api_key=MISTRAL_API_KEY)
+        client = Mistral(api_key=MISTRAL_API_KEY)
         
         with open(pdf_path, "rb") as f:
             pdf_bytes = f.read()
         
         mark_schemes = []
         
-        response = client.document_qa(
+        response = client.documents.qa(
             document=pdf_bytes,
             model="mistral-large-2-2024-04-01",
             prompt="How many separate mark schemes are in this document? Just provide a number."
@@ -166,7 +166,7 @@ def process_pdf_with_mistral(pdf_path):
             {JsonOutputParser(pydantic_object=AIExtractedMarkSchemeModel).get_format_instructions()}
             """
             
-            response = client.document_qa(
+            response = client.documents.qa(
                 document=pdf_bytes,
                 model="mistral-large-2-2024-04-01",
                 prompt=prompt
