@@ -929,6 +929,55 @@ def navigate_mark_scheme():
         traceback.print_exc()
         return jsonify({'error': f'Error navigating mark schemes: {str(e)}'}), 500
 
+@app.route('/extract_mark_scheme', methods=['POST'])
+async def extract_mark_scheme_from_pdf():
+    try:
+        if 'file' not in request.files:
+            return jsonify({'error': 'No file part'}), 400
+        
+        file = request.files['file']
+        
+        if file.filename == '':
+            return jsonify({'error': 'No file selected'}), 400
+        
+        if not file.filename.lower().endswith('.pdf'):
+            return jsonify({'error': 'File must be a PDF'}), 400
+        
+        # Create user directory
+        if 'user_id' not in session:
+            session['user_id'] = str(uuid.uuid4())
+        
+        user_folder = os.path.join(app.config['UPLOAD_FOLDER'], session['user_id'])
+        os.makedirs(user_folder, exist_ok=True)
+        
+        filename = secure_filename(file.filename)
+        filepath = os.path.join(user_folder, filename)
+        file.save(filepath)
+        
+        session['pdf_path'] = filepath
+        
+        mark_schemes = process_pdf_with_mistral(filepath)
+        
+        if not mark_schemes:
+            return jsonify({'error': 'No mark schemes found in the PDF'}), 400
+        
+        session['mark_schemes'] = mark_schemes
+        session['current_mark_scheme_index'] = 0
+        
+        session['mark_scheme'] = mark_schemes[0]
+        
+        return jsonify({
+            'success': True,
+            'mark_schemes': mark_schemes,
+            'total_mark_schemes': len(mark_schemes),
+            'current_index': 0
+        }), 200
+    except Exception as e:
+        print(f"Error processing PDF: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': f'Error processing PDF: {str(e)}'}), 500
+
 @app.route('/submit', methods=['POST'])
 def submit_mark_scheme():
     try:
