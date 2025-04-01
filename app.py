@@ -3,16 +3,21 @@ import os
 import json
 import uuid
 import asyncio
+import tempfile
 from werkzeug.utils import secure_filename
 from PIL import Image
 import io
 import base64
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Tuple
 from dotenv import load_dotenv
 from langchain.prompts import ChatPromptTemplate
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_openai import AzureChatOpenAI
 from langchain_core.output_parsers import PydanticOutputParser, JsonOutputParser
+import PyPDF2
+from pdf2image import convert_from_path
+from mistralai.client import MistralClient
+from mistralai.models.document import DocumentAnalysisRequest
 
 # Import enums and models from output.py
 from static.python.output import (
@@ -32,8 +37,8 @@ from static.python.prompt_lib import structured_mark_scheme_extraction_prompt_te
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
-app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg', 'gif'}
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max upload size
+app.config['ALLOWED_EXTENSIONS'] = {'png', 'jpg', 'jpeg', 'gif', 'pdf'}
+app.config['MAX_CONTENT_LENGTH'] = 32 * 1024 * 1024  # 32MB max upload size
 app.secret_key = 'summer_cartoon_app'  # For session management
 
 # Azure OpenAI configuration
@@ -41,6 +46,8 @@ AZURE_OPENAI_KEY = os.getenv("AZURE_OPENAI_KEY")
 AZURE_OPENAI_ENDPOINT = os.getenv("AZURE_OPENAI_ENDPOINT")
 AZURE_OPENAI_VERSION = os.getenv("AZURE_OPENAI_VERSION")
 AZURE_OPENAI_DEPLOYMENT = os.getenv("AZURE_OPENAI_DEPLOYMENT")
+
+MISTRAL_API_KEY = os.getenv("MISTRAL_API_KEY")
 
 # Ensure upload directory exists
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
@@ -108,6 +115,87 @@ def load_assessment_objectives():
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
+
+def process_pdf_with_mistral(pdf_path):
+    """
+    Process a PDF file using Mistral OCR to extract mark schemes.
+    
+    Args:
+        pdf_path: Path to the PDF file
+        
+    Returns:
+        List of extracted mark schemes
+    """
+    if not MISTRAL_API_KEY:
+        print("Mistral API key not available")
+        return []
+    
+    try:
+        client = MistralClient(api_key=MISTRAL_API_KEY)
+        
+        with open(pdf_path, "rb") as f:
+            pdf_bytes = f.read()
+        
+        request = DocumentAnalysisRequest(
+            document=pdf_bytes,
+            model="mistral-large-2-2024-04-01",
+            mode="document_qa"
+        )
+        
+        mark_schemes = []
+        
+        response = client.document_qa(
+            request=request,
+            prompt="How many separate mark schemes are in this document? Just provide a number."
+        )
+        
+        try:
+            num_mark_schemes = int(response.choices[0].message.content.strip())
+        except (ValueError, IndexError):
+            num_mark_schemes = 1
+        
+        print(f"Detected {num_mark_schemes} mark schemes in the document")
+        
+        for i in range(num_mark_schemes):
+            prompt = f"""
+            Extract mark scheme #{i+1} from this document. 
+            
+            A mark scheme has these components:
+            1. Assessment objectives (AO1, AO2, etc.)
+            2. Levels (usually 1-4 or 0-4)
+            3. Mark bounds for each level
+            4. Skills descriptors for each level
+            5. Indicative standard examples
+            6. Subject, qualification level, and exam board
+            
+            Format the output as a JSON object matching this structure:
+            {JsonOutputParser(pydantic_object=AIExtractedMarkSchemeModel).get_format_instructions()}
+            """
+            
+            response = client.document_qa(
+                request=request,
+                prompt=prompt
+            )
+            
+            try:
+                mark_scheme_text = response.choices[0].message.content
+                if "```json" in mark_scheme_text:
+                    mark_scheme_text = mark_scheme_text.split("```json")[1].split("```")[0].strip()
+                elif "```" in mark_scheme_text:
+                    mark_scheme_text = mark_scheme_text.split("```")[1].split("```")[0].strip()
+                
+                mark_scheme_data = json.loads(mark_scheme_text)
+                mark_schemes.append(mark_scheme_data)
+            except Exception as e:
+                print(f"Error parsing mark scheme #{i+1}: {e}")
+                continue
+        
+        return mark_schemes
+    except Exception as e:
+        print(f"Error processing PDF with Mistral: {e}")
+        import traceback
+        traceback.print_exc()
+        return []
 
 def stitch_images(files, output_path=None):
     """
@@ -239,33 +327,54 @@ async def ainvoke_llm(image_data: str = None, text_data: str = None, model: str 
         traceback.print_exc()
         return None
 
-async def extract_mark_scheme(image_path=None, text_content=None):
+async def extract_mark_scheme(image_path=None, text_content=None, pdf_path=None):
     """
-    Extracts a mark scheme from an image or text using Azure OpenAI.
+    Extracts a mark scheme from an image, text, or PDF using Azure OpenAI or Mistral OCR.
     
     Args:
         image_path: Path to the image file (optional)
         text_content: Text content of the mark scheme (optional)
+        pdf_path: Path to the PDF file (optional)
         
     Returns:
-        Extracted mark scheme data
+        Extracted mark scheme data or list of mark schemes for PDFs
     """
     try:
-        if image_path:
+        if pdf_path:
+            print(f"Extracting mark schemes from PDF: {pdf_path}")
+            mark_schemes = process_pdf_with_mistral(pdf_path)
+            
+            session['mark_schemes'] = mark_schemes
+            session['current_mark_scheme_index'] = 0
+            
+            if mark_schemes and len(mark_schemes) > 0:
+                return mark_schemes[0]
+            else:
+                print("No mark schemes extracted from PDF, using example")
+                return get_example_mark_scheme()
+        
+        elif image_path:
+            if image_path.lower().endswith('.pdf'):
+                return await extract_mark_scheme(pdf_path=image_path)
+            
             # Read the image file and encode it as base64
             with open(image_path, "rb") as image_file:
                 image_data = base64.b64encode(image_file.read()).decode("utf-8")
             
             # Invoke the LLM with the image
             response = await ainvoke_llm(image_data=image_data)
+        
         elif text_content:
             # Invoke the LLM with the text content
             response = await ainvoke_llm(text_data=text_content)
+        
+        # No input provided
         else:
-            # No input provided
             return get_example_mark_scheme()
         
         if response:
+            session['mark_schemes'] = [response]
+            session['current_mark_scheme_index'] = 0
             return response
         else:
             # Return a default example if LLM extraction failed
@@ -621,15 +730,24 @@ def upload_files():
     session['files'] = file_info
     print(f"Stored {len(file_info)} files in session")
     
-    # If only one file was uploaded, automatically set it as the stitched image
     if len(file_info) == 1:
-        # Use the single image as the stitched image
-        single_image_path = file_info[0]['path']
+        single_file_path = file_info[0]['path']
+        
+        if single_file_path.lower().endswith('.pdf'):
+            session['pdf_path'] = single_file_path
+            print(f"PDF file detected and stored in session: {single_file_path}")
+            
+            return jsonify({
+                'files': file_info,
+                'is_pdf': True,
+                'pdf_url': file_info[0]['url']
+            }), 200
+        
         stitched_path = os.path.join(user_folder, 'stitched_image.png')
         
         # Copy the image to the stitched image path
         try:
-            with Image.open(single_image_path) as img:
+            with Image.open(single_file_path) as img:
                 img.save(stitched_path)
             
             # Store stitched image info in session
@@ -640,6 +758,7 @@ def upload_files():
             return jsonify({
                 'files': file_info,
                 'single_image': True,
+                'is_pdf': False,
                 'stitched_image_url': f"/static/uploads/{session['user_id']}/stitched_image.png?t={uuid.uuid4()}"
             }), 200
         except Exception as e:
@@ -689,7 +808,6 @@ def stitch_images_route():
 @app.route('/extract', methods=['POST'])
 async def extract_mark_scheme_route():
     try:
-        # Check if we're processing image or text
         input_type = request.json.get('input_type')
         
         if input_type == 'image':
@@ -705,15 +823,24 @@ async def extract_mark_scheme_route():
                 return jsonify({'error': 'No text content provided'}), 400
             
             mark_scheme = await extract_mark_scheme(text_content=text_content)
+        elif input_type == 'pdf':
+            if 'pdf_path' not in session:
+                return jsonify({'error': 'No PDF file available'}), 400
+            
+            mark_scheme = await extract_mark_scheme(pdf_path=session['pdf_path'])
         else:
             return jsonify({'error': 'Invalid input type'}), 400
         
         # Store in session
         session['mark_scheme'] = mark_scheme
         
+        total_mark_schemes = len(session.get('mark_schemes', []))
+        
         return jsonify({
             'success': True,
-            'mark_scheme': mark_scheme
+            'mark_scheme': mark_scheme,
+            'total_mark_schemes': total_mark_schemes,
+            'current_index': session.get('current_mark_scheme_index', 0)
         }), 200
     except Exception as e:
         return jsonify({'error': f'Error extracting mark scheme: {str(e)}'}), 500
@@ -770,6 +897,42 @@ def get_processed_json():
         import traceback
         traceback.print_exc()
         return jsonify({'error': f'Error getting processed JSON: {str(e)}'}), 500
+
+@app.route('/navigate_mark_scheme', methods=['POST'])
+def navigate_mark_scheme():
+    try:
+        direction = request.json.get('direction')
+        
+        if 'mark_schemes' not in session or not session['mark_schemes']:
+            return jsonify({'error': 'No mark schemes available'}), 400
+        
+        current_index = session.get('current_mark_scheme_index', 0)
+        total_mark_schemes = len(session['mark_schemes'])
+        
+        if direction == 'next':
+            new_index = min(current_index + 1, total_mark_schemes - 1)
+        elif direction == 'prev':
+            new_index = max(current_index - 1, 0)
+        else:
+            return jsonify({'error': 'Invalid direction'}), 400
+        
+        session['current_mark_scheme_index'] = new_index
+        
+        mark_scheme = session['mark_schemes'][new_index]
+        
+        session['mark_scheme'] = mark_scheme
+        
+        return jsonify({
+            'success': True,
+            'mark_scheme': mark_scheme,
+            'total_mark_schemes': total_mark_schemes,
+            'current_index': new_index
+        }), 200
+    except Exception as e:
+        print(f"Error navigating mark schemes: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': f'Error navigating mark schemes: {str(e)}'}), 500
 
 @app.route('/submit', methods=['POST'])
 def submit_mark_scheme():

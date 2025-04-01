@@ -3,8 +3,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // Input type toggles
     const imageInputRadio = document.getElementById('imageInput');
     const textInputRadio = document.getElementById('textInput');
+    const pdfInputRadio = document.getElementById('pdfInput');
     const imageUploadSection = document.getElementById('imageUploadSection');
     const textInputSection = document.getElementById('textInputSection');
+    const pdfInputSection = document.getElementById('pdfInputSection');
 
     // Image upload elements
     const dropzone = document.getElementById('dropzone');
@@ -21,6 +23,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const markSchemeText = document.getElementById('markSchemeText');
     const processTextBtn = document.getElementById('processTextBtn');
 
+    const pdfDropzone = document.getElementById('pdfDropzone');
+    const pdfFileInput = document.getElementById('pdfFileInput');
+    const pdfUploadBtn = document.getElementById('pdfUploadBtn');
+    const pdfUploadPreview = document.getElementById('pdfUploadPreview');
+    
+    const markSchemeNavigation = document.getElementById('markSchemeNavigation');
+    const prevMarkSchemeBtn = document.getElementById('prevMarkSchemeBtn');
+    const nextMarkSchemeBtn = document.getElementById('nextMarkSchemeBtn');
+    const currentMarkSchemeIndex = document.getElementById('currentMarkSchemeIndex');
+    const totalMarkSchemes = document.getElementById('totalMarkSchemes');
+    
     // Common elements
     const extractBtn = document.getElementById('extractBtn');
     const markSchemeContainer = document.getElementById('markSchemeContainer');
@@ -53,8 +66,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // State
     let uploadedFiles = [];
+    let uploadedPdfFiles = [];
     let sortable = null;
     let markSchemeData = null;
+    let markSchemes = []; // Array to store multiple mark schemes
+    let currentMarkSchemeIdx = 0; // Current mark scheme index for navigation
     let currentInputType = 'image'; // Default input type
     let currentSeason = 'summer'; // Track current season
     let animals = []; // Store animal references
@@ -1145,16 +1161,20 @@ function showImagePreview(imageUrl, filename) {
     function toggleInputType(type) {
         currentInputType = type;
 
+        imageUploadSection.style.display = 'none';
+        textInputSection.style.display = 'none';
+        pdfInputSection.style.display = 'none';
+        
+        // Hide image-specific containers
+        arrangeContainer.style.display = 'none';
+        previewContainer.style.display = 'none';
+
         if (type === 'image') {
             imageUploadSection.style.display = 'block';
-            textInputSection.style.display = 'none';
-        } else {
-            imageUploadSection.style.display = 'none';
+        } else if (type === 'text') {
             textInputSection.style.display = 'block';
-
-            // Hide image-specific containers
-            arrangeContainer.style.display = 'none';
-            previewContainer.style.display = 'none';
+        } else if (type === 'pdf') {
+            pdfInputSection.style.display = 'block';
         }
     }
 
@@ -2879,5 +2899,156 @@ document.addEventListener('DOMContentLoaded', function() {
             !isNaN(parseFloat(obj.weight))
         );
     }
+    
+    function handlePdfFiles(files) {
+        const fileArray = Array.from(files);
+        
+        uploadedPdfFiles = [];
+        pdfUploadPreview.innerHTML = '';
+        
+        // Display preview
+        fileArray.forEach((file) => {
+            if (file.type === 'application/pdf') {
+                const div = document.createElement('div');
+                div.className = 'pdf-preview';
+                div.innerHTML = `
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title"><i class="fas fa-file-pdf text-danger me-2"></i>${file.name}</h5>
+                            <p class="card-text">Size: ${(file.size / 1024).toFixed(2)} KB</p>
+                        </div>
+                    </div>
+                `;
+                pdfUploadPreview.appendChild(div);
+                uploadedPdfFiles.push(file);
+            }
+        });
+    }
+    
+    function navigateMarkScheme(direction) {
+        if (markSchemes.length <= 1) return;
+        
+        if (direction === 'next' && currentMarkSchemeIdx < markSchemes.length - 1) {
+            currentMarkSchemeIdx++;
+        } else if (direction === 'prev' && currentMarkSchemeIdx > 0) {
+            currentMarkSchemeIdx--;
+        }
+        
+        currentMarkSchemeIndex.textContent = currentMarkSchemeIdx + 1;
+        totalMarkSchemes.textContent = markSchemes.length;
+        
+        markSchemeData = markSchemes[currentMarkSchemeIdx];
+        renderMarkScheme(markSchemeData);
+    }
+    
+    if (pdfInputRadio) {
+        pdfInputRadio.addEventListener('change', () => toggleInputType('pdf'));
+    }
+    
+    if (pdfDropzone) {
+        pdfDropzone.addEventListener('click', () => {
+            pdfFileInput.click();
+        });
+        
+        pdfDropzone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            pdfDropzone.classList.add('dragover');
+        });
+        
+        pdfDropzone.addEventListener('dragleave', () => {
+            pdfDropzone.classList.remove('dragover');
+        });
+        
+        pdfDropzone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            pdfDropzone.classList.remove('dragover');
+            handlePdfFiles(e.dataTransfer.files);
+        });
+    }
+    
+    if (pdfFileInput) {
+        pdfFileInput.addEventListener('change', (e) => {
+            handlePdfFiles(e.target.files);
+        });
+    }
+    
+    if (pdfUploadBtn) {
+        pdfUploadBtn.addEventListener('click', async () => {
+            if (uploadedPdfFiles.length === 0) {
+                alert('Please select a PDF file to upload');
+                return;
+            }
+            
+            showLoading('Processing PDF...');
+            
+            const formData = new FormData();
+            formData.append('file', uploadedPdfFiles[0]);
+            
+            try {
+                const response = await fetch('/extract_mark_scheme', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+                
+                markSchemes = data.mark_schemes || [];
+                currentMarkSchemeIdx = 0;
+                
+                if (markSchemes.length > 1) {
+                    markSchemeNavigation.style.display = 'block';
+                    currentMarkSchemeIndex.textContent = '1';
+                    totalMarkSchemes.textContent = markSchemes.length;
+                } else {
+                    markSchemeNavigation.style.display = 'none';
+                }
+                
+                if (markSchemes.length > 0) {
+                    markSchemeData = markSchemes[0];
+                    renderMarkScheme(markSchemeData);
+                    markSchemeContainer.style.display = 'block';
+                } else {
+                    alert('No mark schemes found in the PDF');
+                }
+                
+                hideLoading();
+            } catch (error) {
+                hideLoading();
+                alert(`Error processing PDF: ${error.message}`);
+            }
+        });
+    }
+    
+    if (prevMarkSchemeBtn) {
+        prevMarkSchemeBtn.addEventListener('click', () => navigateMarkScheme('prev'));
+    }
+    
+    if (nextMarkSchemeBtn) {
+        nextMarkSchemeBtn.addEventListener('click', () => navigateMarkScheme('next'));
+    }
+    
+    const originalResetApp = resetApp;
+    resetApp = function() {
+        originalResetApp();
+        
+        if (pdfFileInput) {
+            pdfFileInput.value = '';
+        }
+        if (pdfUploadPreview) {
+            pdfUploadPreview.innerHTML = '';
+        }
+        
+        if (markSchemeNavigation) {
+            markSchemeNavigation.style.display = 'none';
+        }
+        
+        markSchemes = [];
+        currentMarkSchemeIdx = 0;
+        uploadedPdfFiles = [];
+    };
 
 });
