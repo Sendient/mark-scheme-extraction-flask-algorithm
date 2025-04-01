@@ -17,7 +17,6 @@ from langchain_core.output_parsers import PydanticOutputParser, JsonOutputParser
 import PyPDF2
 from pdf2image import convert_from_path
 from mistralai.client import MistralClient
-from mistralai.models.document import DocumentAnalysisRequest
 
 # Import enums and models from output.py
 from static.python.output import (
@@ -136,16 +135,11 @@ def process_pdf_with_mistral(pdf_path):
         with open(pdf_path, "rb") as f:
             pdf_bytes = f.read()
         
-        request = DocumentAnalysisRequest(
-            document=pdf_bytes,
-            model="mistral-large-2-2024-04-01",
-            mode="document_qa"
-        )
-        
         mark_schemes = []
         
         response = client.document_qa(
-            request=request,
+            document=pdf_bytes,
+            model="mistral-large-2-2024-04-01",
             prompt="How many separate mark schemes are in this document? Just provide a number."
         )
         
@@ -173,7 +167,8 @@ def process_pdf_with_mistral(pdf_path):
             """
             
             response = client.document_qa(
-                request=request,
+                document=pdf_bytes,
+                model="mistral-large-2-2024-04-01",
                 prompt=prompt
             )
             
