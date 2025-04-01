@@ -551,6 +551,10 @@ function animateScene() {
                         // Update position and orientation
                         animal.element.style.left = `${animal.x}px`;
                         animal.element.style.transform = `scaleX(${animal.direction})`;
+                        
+                        if (animal.element.id) {
+                            updateSpeechBubblePosition(animal.element);
+                        }
 
                         // Add leg animation class when moving
                         animal.element.classList.add('walking');
@@ -897,11 +901,9 @@ function showSheepSpeechBubble(sheep) {
         bubble.setAttribute('data-sheep-id', sheep.id);
         
         document.body.appendChild(bubble);
-        
-        const sheepRect = sheep.getBoundingClientRect();
-        bubble.style.left = (sheepRect.left + sheepRect.width/2 - 40) + 'px';
-        bubble.style.top = (sheepRect.top - 30) + 'px';
     }
+    
+    updateSpeechBubblePosition(sheep);
 
     // Set bubble text and make it visible
     bubble.textContent = generateSheepSpeech();
@@ -918,6 +920,17 @@ function showSheepSpeechBubble(sheep) {
             }
         }, 300);
     }, displayTime);
+}
+
+function updateSpeechBubblePosition(sheep) {
+    if (!sheep.id) return;
+    
+    const bubble = document.querySelector(`.sheep-speech-bubble[data-sheep-id="${sheep.id}"]`);
+    if (!bubble) return;
+    
+    const sheepRect = sheep.getBoundingClientRect();
+    bubble.style.left = (sheepRect.left + sheepRect.width/2 - 40) + 'px';
+    bubble.style.top = (sheepRect.top - 30) + 'px';
 }
 
 // Function to randomly trigger sheep talking
