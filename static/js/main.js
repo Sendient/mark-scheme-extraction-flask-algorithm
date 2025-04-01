@@ -551,6 +551,10 @@ function animateScene() {
                         // Update position and orientation
                         animal.element.style.left = `${animal.x}px`;
                         animal.element.style.transform = `scaleX(${animal.direction})`;
+                        
+                        if (animal.element.id) {
+                            updateSpeechBubblePosition(animal.element);
+                        }
 
                         // Add leg animation class when moving
                         animal.element.classList.add('walking');
@@ -881,17 +885,25 @@ function generateSheepSpeech() {
 // Function to create and show a speech bubble
 function showSheepSpeechBubble(sheep) {
     // Don't add a new bubble if one is already visible
-    let bubble = sheep.querySelector('.sheep-speech-bubble');
+    let bubble = document.querySelector(`.sheep-speech-bubble[data-sheep-id="${sheep.id}"]`);
     if (bubble && bubble.classList.contains('visible')) {
         return;
     }
 
     // If no bubble exists, create one
     if (!bubble) {
+        if (!sheep.id) {
+            sheep.id = 'sheep-' + Math.random().toString(36).substr(2, 9);
+        }
+        
         bubble = document.createElement('div');
         bubble.className = 'sheep-speech-bubble';
-        sheep.appendChild(bubble);
+        bubble.setAttribute('data-sheep-id', sheep.id);
+        
+        document.body.appendChild(bubble);
     }
+    
+    updateSpeechBubblePosition(sheep);
 
     // Set bubble text and make it visible
     bubble.textContent = generateSheepSpeech();
@@ -903,11 +915,22 @@ function showSheepSpeechBubble(sheep) {
         bubble.classList.remove('visible');
         // Remove element after transition
         setTimeout(() => {
-            if (bubble && bubble.parentNode === sheep) {
-                sheep.removeChild(bubble);
+            if (bubble && bubble.parentNode) {
+                bubble.parentNode.removeChild(bubble);
             }
         }, 300);
     }, displayTime);
+}
+
+function updateSpeechBubblePosition(sheep) {
+    if (!sheep.id) return;
+    
+    const bubble = document.querySelector(`.sheep-speech-bubble[data-sheep-id="${sheep.id}"]`);
+    if (!bubble) return;
+    
+    const sheepRect = sheep.getBoundingClientRect();
+    bubble.style.left = (sheepRect.left + sheepRect.width/2 - 40) + 'px';
+    bubble.style.top = (sheepRect.top - 30) + 'px';
 }
 
 // Function to randomly trigger sheep talking
