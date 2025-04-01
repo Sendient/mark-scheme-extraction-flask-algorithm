@@ -1870,6 +1870,16 @@ h1, h2, h3, h4, h5, h6 {
     transform: scale(1);
 }
 
+/* Ensure speech bubbles stay upright even when sheep are flipped */
+.sheep-speech-bubble {
+    /* Use transform-origin to ensure proper positioning */
+    transform: scaleX(1) !important;
+    /* Prevent inheriting transforms from parent */
+    transform-style: flat;
+    /* Ensure the speech bubble is positioned correctly */
+    position: absolute !important;
+}
+
 @keyframes pop-in {
     0% { transform: scale(0); }
     50% { transform: scale(1.2); }
